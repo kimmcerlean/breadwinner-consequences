@@ -58,17 +58,6 @@ label values employ employ
 
 drop RMESR
 
-label define jobchange 0 "No" 1 "Yes"
-forvalues job=1/7{
-	recode AJB`job'_RSEND (0=0) (1/10=1), gen(jobchange_`job')
-	label values jobchange_`job' jobchange
-	drop AJB`job'_RSEND
-}
-
-gen better_job = .
-replace better_job = 1 if (inlist(EJB1_RSEND,7,8) | inlist(EJB2_RSEND,7,8) | inlist(EJB3_RSEND,7,8) | inlist(EJB4_RSEND,7,8) | inlist(EJB5_RSEND,7,8) | inlist(EJB6_RSEND,7,8) | inlist(EJB7_RSEND,7,8))
-replace better_job = 0 if (jobchange_1==1 | jobchange_2==1 | jobchange_3==1 | jobchange_4==1 | jobchange_5==1 | jobchange_6==1 | jobchange_7==1) & better_job==.
-
 * earnings change: tpearn seems to cover all jobs in month. need to decide if we want OVERALL change in earnings, or PER JOB (<5% of sample has 2+ jobs)
 // browse TAGE RMNUMJOBS EJB1_PAYHR1 TJB1_ANNSAL1 TJB1_HOURLY1 TJB1_WKLY1 TJB1_BWKLY1 TJB1_MTHLY1 TJB1_SMTHLY1 TJB1_OTHER1 TJB1_GAMT1 TJB1_MSUM TJB2_MSUM TJB3_MSUM TPEARN
 
@@ -124,20 +113,6 @@ replace `var' =0 if `var'==2
 
 egen programs = rowtotal ( RFSYN TGAYN RTANFYN RWICYN )
 
-* Child care ease of use
-foreach var in ECHLD_MNYN ELIST EWORKMORE{
-replace `var'=0 if `var'==2
-}
-
-* reasons for moving
-
-recode EEHC_WHY (1/3=1) (4/7=2) (8/12=3) (13=4) (14=5) (15=7) (16=6), gen(moves)
-label define moves 1 "Family reason" 2 "Job reason" 3 "House/Neighborhood" 4 "Disaster" 5 "Evicted" 6 "Other" 7 "Did not Move"
-label values moves moves
-
-recode EEHC_WHY (1=1) (2=2) (3/14=3) (15=4) (16=3), gen(hh_move)
-label define hh_move 1 "Relationship Change" 2 "Independence" 3 "Other" 4 "Did not Move"
-label values hh_move hh_move
 
 * Reasons for leaving employer
 label define leave_job 1 "Fired" 2 "Other Involuntary Reason" 3 "Quit Voluntarily" 4 "Retired" 5 "Childcare-related" 6 "Other personal reason" 7 "Illness" 8 "In School"

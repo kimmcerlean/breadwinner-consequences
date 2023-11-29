@@ -214,17 +214,6 @@ label values employ employ
 
 drop rmesr
 
-label define jobchange 0 "No" 1 "Yes"
-forvalues job=1/7{
-	recode ajb`job'_rsend (0=0) (1/10=1), gen(jobchange_`job')
-	label values jobchange_`job' jobchange
-	drop ajb`job'_rsend
-}
-
-gen better_job = .
-replace better_job = 1 if (inlist(ejb1_rsend,7,8) | inlist(ejb2_rsend,7,8) | inlist(ejb3_rsend,7,8) | inlist(ejb4_rsend,7,8) | inlist(ejb5_rsend,7,8) | inlist(ejb6_rsend,7,8) | inlist(ejb7_rsend,7,8))
-replace better_job = 0 if (jobchange_1==1 | jobchange_2==1 | jobchange_3==1 | jobchange_4==1 | jobchange_5==1 | jobchange_6==1 | jobchange_7==1) & better_job==.
-
 
 * wages change: Was going to try to aggregate across but it is seeming too complicated, so will handle in annualization, with any wage change, as well as shift from how paid (e.g. hourly to annual salary)
 // EJB*_PAYHR* TJB*_ANNSAL* TJB*_HOURLY* TJB*_WKLY* TJB*_BWKLY* TJB*_MTHLY* TJB*_SMTHLY* TJB*_OTHER* TJB*_GAMT*
@@ -273,17 +262,6 @@ egen programs = rowtotal ( rfsyn tgayn rtanfyn rwicyn)
 foreach var in echld_mnyn elist eworkmore{
 replace `var'=0 if `var'==2
 }
-
-
-* reasons for moving
-
-recode eehc_why (1/3=1) (4/7=2) (8/12=3) (13=4) (14=5) (15=7) (16=6), gen(moves)
-label define moves 1 "Family reason" 2 "Job reason" 3 "House/Neighborhood" 4 "Disaster" 5 "Evicted" 6 "Other" 7 "Did not Move"
-label values moves moves
-
-recode eehc_why (1=1) (2=2) (3/14=3) (15=4) (16=3), gen(hh_move)
-label define hh_move 1 "Relationship Change" 2 "Independence" 3 "Other" 4 "Did not Move"
-label values hh_move hh_move
 
 
 * Reasons for leaving employer
@@ -554,7 +532,7 @@ preserve
 restore
 	
 // create output of sample size with restrictions
-dyndoc "$SIPP2014_code/sample_size_2014.md", saving($results/sample_size_2014.html) replace
+dyndoc "$projcode/sample_size_2014.md", saving($results/sample_size_2014.html) replace
 
 	
 save "$SIPP14keep/sipp14tpearn_all", replace

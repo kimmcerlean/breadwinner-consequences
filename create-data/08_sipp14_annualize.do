@@ -195,29 +195,6 @@ full_part_sp full_no_sp part_no_sp part_full_sp no_part_sp no_full_sp educ_chang
 
 save "$tempdir/reshape_transitions.dta", replace
 
-// creating table to make the ratio to use for the weight correction
-
-use "$SIPP14keep/sipp14tpearn_rel", clear
-
-drop _merge
-merge 1:1 SSUID PNUM panelmonth using "$tempdir/reshape_transitions.dta"
-drop if _merge==2
-
-// preserve
-collapse 	(sum) partner_lose, by(monthcode)
-egen total_N14=total(partner_lose)
-gen distro14=partner_lose/total_N14
-rename partner_lose partner_lose14
-
-merge 1:1 monthcode using "$tempdir/96_partner_distro.dta"
-drop _merge
-
-gen ratio = distro / distro14
-
-save "$tempdir/partner_distro_lookup.dta", replace
-
-//*Back to original and testing match
-
 use "$SIPP14keep/sipp14tpearn_rel", clear
 
 drop _merge
@@ -226,10 +203,6 @@ merge 1:1 SSUID PNUM panelmonth using "$tempdir/reshape_transitions.dta"
 tab marital_status _merge, m // all missing
 tab educ _merge, m
 drop if _merge==2
-
-	* adding the ratio column to use for the weight correction
-	drop _merge
-	merge m:1 monthcode using "$tempdir/partner_distro_lookup.dta"
 
 	
 	* browse SSUID PNUM monthcode partner spouse relationship2 pairtype2 marital_status partner_lose if pairtype2==2
@@ -272,13 +245,6 @@ bysort SSUID PNUM year (year_left): replace year_left = year_left[1]
 
 browse SSUID PNUM year monthcode partner_lose year_left
 
-gen correction=1
-replace correction = ratio if year == year_left
-
-browse SSUID PNUM year monthcode partner_lose year_left ratio correction
-
-sum correction
-
 gen spousenum=.
 	forvalues n=1/22{
 	replace spousenum=`n' if relationship`n'==1
@@ -302,251 +268,6 @@ forvalues n=1/22{
 	replace sex_sp=to_sex`n' if spart_num==`n'	
 }
 
-/* exploration
-browse SSUID PNUM year monthcode panelmonth partner_lose
-tab monthcode partner_lose, column
-
-bysort SSUID PNUM year (monthcode): egen month_left = min(monthcode) if partner_lose==1
-bysort SSUID PNUM year (month_left): replace month_left = month_left[1]
-sort SSUID PNUM year monthcode
-browse SSUID PNUM year monthcode panelmonth partner_lose month_left
-
-gen timing_left=.
-replace timing_left=0 if monthcode <= month_left & month_left!=.
-replace timing_left=1 if monthcode > month_left & month_left!=.
-browse SSUID PNUM year monthcode panelmonth partner_lose month_left timing_left
-
-	gen spousenum=.
-	forvalues n=1/22{
-	replace spousenum=`n' if relationship`n'==1
-	}
-
-	gen partnernum=.
-	forvalues n=1/22{
-	replace partnernum=`n' if relationship`n'==2
-	}
-
-	gen spart_num=spousenum
-	replace spart_num=partnernum if spart_num==.
-
-	gen earnings_sp=.
-	gen earnings_a_sp=.
-
-	forvalues n=1/22{
-	replace earnings_sp=to_TPEARN`n' if spart_num==`n'
-	replace earnings_a_sp=to_earnings`n' if spart_num==`n' // use this one
-	}
-	
-	gen pairtype_sp=.
-	forvalues n=1/22{
-	    replace pairtype_sp = pairtype`n' if spart_num==`n'
-	}
-	
-	
-sort SSUID PNUM panelmonth
-replace pairtype_sp=pairtype_sp[_n-1] if partner_lose==1  & SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & panelmonth==(panelmonth[_n-1]+1)
-	
-browse SSUID PNUM year monthcode spartner partner_lose earnings earnings_a_sp thearn_alt mbw60 pairtype_sp //  ems ems_ehc
-
-tab pairtype_sp if partner_lose==1
-replace pairtype_sp =0 if pairtype_sp==.
-
-bysort SSUID PNUM year (pairtype_sp): egen pairtype_sp_ch=max(pairtype_sp)
-sort SSUID PNUM panelmonth
-browse SSUID PNUM year monthcode spartner spart_num partner_lose earnings earnings_a_sp pairtype_sp pairtype_sp_ch
-
-	* want examples of SSUIDs to investigate WHY there aren't all the person-months - do I have in main file and I lost along way, or were never there??
-	* 000418209316 - only up to month 7, year 2014 - but that's nothing to do with partner, because partner left month 1...
-	* 000860215173 - only up to month 2, year 2015 - partner left month 1
-
-// troubleshooting why the distribution doesn't match 1996
-browse monthcode SSUID year year_left partner_lose correction
-
-tab monthcode partner_lose [aweight=correction], column
-tab monthcode partner_lose if pairtype_sp_ch==2 [aweight=correction], column
-tab monthcode partner_lose if pairtype_sp_ch==1 [aweight=correction], column
-
-tab monthcode
-tab monthcode [aweight=wpfinwgt]
-tab monthcode if year == year_left [aweight=wpfinwgt]
-
-tab monthcode if year == year_left & pairtype_sp_ch==2 // why is distribution RIGHT for type 2 but not type 1? Am i artificially doing this somehow?!
-tab monthcode if year == year_left & pairtype_sp_ch==1
-
-tab monthcode if year == year_left & year==2013
-tab monthcode if year == year_left & year==2014
-tab monthcode if year == year_left & year==2015
-tab monthcode if year == year_left & year==2016
-
-tab monthcode if year == year_left & year==2013 & pairtype_sp_ch==1
-tab monthcode if year == year_left & year==2014 & pairtype_sp_ch==1 // 7.8-8.9
-tab monthcode if year == year_left & year==2015 & pairtype_sp_ch==1  // 7.6-9.6
-tab monthcode if year == year_left & year==2016 & pairtype_sp_ch==1 // gets WORSE with each year- is it just drop-off?? 7.0-9.7
-
-// change in earnings within year
-gen earnings_z = earnings
-replace earnings_z = 0 if earnings==.
-
-by SSUID PNUM (panelmonth), sort: gen earn_change = ((earnings_z -earnings_z[_n-1])/earnings_z [_n-1]) if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & panelmonth==panelmonth[_n-1]+1
-by SSUID PNUM (panelmonth), sort: gen earn_change_raw = (earnings_z -earnings_z[_n-1]) if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & panelmonth==panelmonth[_n-1]+1
-
-browse SSUID PNUM year monthcode earnings earn_change earn_change_raw
-
-gen earnings_z_sp = earnings_a_sp
-replace earnings_z_sp = 0 if earnings_a_sp==.
-
-by SSUID PNUM (panelmonth), sort: gen earn_change_sp = ((earnings_z_sp -earnings_z_sp[_n-1])/earnings_z_sp[_n-1]) if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & panelmonth==panelmonth[_n-1]+1
-by SSUID PNUM (panelmonth), sort: gen earn_change_raw_sp = (earnings_z_sp -earnings_z_sp[_n-1]) if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & panelmonth==panelmonth[_n-1]+1
-
-browse SSUID PNUM year monthcode earnings_z_sp earn_change_sp earn_change_raw_sp
-
-bysort SSUID PNUM year (monthcode): egen month_lost10 = min(monthcode) if earn_change_sp<=-.10000000000000000000
-bysort SSUID PNUM year (month_lost10): replace month_lost10 = month_lost10[1]
-gen month_lost10_flag = 1 if month_lost10 == monthcode
-sort SSUID PNUM year monthcode
-browse SSUID PNUM year monthcode panelmonth earnings_z_sp earn_change_sp month_lost10 month_lost10_flag
-
-bysort SSUID PNUM year (monthcode): egen month_lost50 = min(monthcode) if earn_change_sp<=-.5000000000000000000
-bysort SSUID PNUM year (month_lost50): replace month_lost50 = month_lost50[1]
-gen month_lost50_flag = 1 if month_lost50 == monthcode
-
-bysort SSUID PNUM year (monthcode): egen month_lost100 = min(monthcode) if earn_change_sp<=-1
-bysort SSUID PNUM year (month_lost100): replace month_lost100 = month_lost100[1]
-gen month_lost100_flag = 1 if month_lost100 == monthcode
-
-sort SSUID PNUM year monthcode
-browse SSUID PNUM year monthcode panelmonth earnings_z_sp earn_change_sp month_lost10 month_lost10_flag month_lost50 month_lost50_flag month_lost100 month_lost100_flag
-
-tab monthcode month_lost10_flag, column
-tab monthcode month_lost50_flag, column
-tab monthcode month_lost100_flag, column
-
-sum earnings_z, detail
-sum earn_change, detail
-sum earn_change_raw, detail
-sum earnings_z_sp, detail
-sum earn_change_sp, detail
-sum earn_change_raw_sp, detail
-
-preserve
-
-collapse 	(sum) earnings earnings_a_sp thearn_alt to_earnings* /// 
-			(mean) partner_lose partner_gain 					///
-			(max) relationship*, ///
-			by(SSUID PNUM year timing_left)
-			
-
-egen hh_earn_max = rowmax (to_earnings1-to_earnings22)
-// browse SSUID PNUM year hh_earn_max earnings to_earnings* 
-
-gen who_max_earn=.
-forvalues n=1/22{
-replace who_max_earn=relationship`n' if to_earnings`n'==hh_earn_max
-}
-
-// browse SSUID PNUM year who_max_earn hh_earn_max earnings to_earnings* relationship*
-
-gen total_max_earner=.
-replace total_max_earner=who_max_earn if (earnings==. & hh_earn_max>0 & hh_earn_max!=.) | (hh_earn_max > earnings & earnings!=. & hh_earn_max!=.)
-replace total_max_earner=99 if (earnings>0 & earnings!=. & hh_earn_max==.) | (hh_earn_max < earnings & earnings!=. & hh_earn_max!=.)
-
-gen total_max_earner2=total_max_earner
-replace total_max_earner2=100 if total_max_earner==99 & (hh_earn_max==0 | hh_earn_max==.) // splitting out the "self" view to delineate between hh where mother is primary earner because she is the only earner
-
-browse SSUID PNUM year who_max_earn hh_earn_max earnings total_max_earner total_max_earner2 to_earnings*
-
-
-#delimit ;
-label define rel2 1 "Spouse"
-                  2 "Unmarried partner"
-                  3 "Biological parent"
-                  4 "Biological child"
-                  5 "Step parent"
-                  6 "Step child"
-                  7 "Adoptive parent"
-                  8 "Adoptive child"
-                  9 "Grandparent"
-                 10 "Grandchild"
-                 11 "Biological siblings"
-                 12 "Half siblings"
-                 13 "Step siblings"
-                 14 "Adopted siblings"
-                 15 "Other siblings"
-                 16 "In-law"
-                 17 "Aunt, Uncle, Niece, Nephew"
-                 18 "Other relationship"   
-                 19 "Foster parent/Child"
-                 20 "Other non-relative"
-                 99 "self" 
-				 100 "self - no other earners" ;
-
-#delimit cr
-
-label values who_max_earn total_max_earner* relationship* rel2
-
-gen parent=0
-forvalues r=1/22{
-    replace parent=parent+1 if inlist(relationship`r',3,5,7)
-}
-
-gen other_rel=0
-forvalues r=1/22{
-    replace other_rel=other_rel+1 if inrange(relationship`r',9,19)
-}
-
-gen other_non_rel=0
-forvalues r=1/22{
-    replace other_non_rel=other_non_rel+1 if relationship`r'==20
-}
-
-browse SSUID PNUM year timing_left parent other_rel other_non_rel
-
-sum parent if timing_left==0
-sum parent if timing_left==1
-sum other_rel if timing_left==0
-sum other_rel if timing_left==1
-sum other_non_rel if timing_left==0
-sum other_non_rel if timing_left==1
-
-gen parent_enter=0
-replace parent_enter=1 if timing_left==1 & timing_left[_n-1]==0 & parent > parent[_n-1]
-replace parent_enter=. if timing_left==.
-
-gen rel_enter=0
-replace rel_enter=1 if timing_left==1 & timing_left[_n-1]==0 & other_rel > other_rel[_n-1]
-replace rel_enter=. if timing_left==.
-
-gen non_rel_enter=0
-replace non_rel_enter=1 if timing_left==1 & timing_left[_n-1]==0 & other_non_rel > other_non_rel[_n-1]
-replace non_rel_enter=. if timing_left==.
-
-browse SSUID PNUM year timing_left parent other_rel other_non_rel parent_enter rel_enter non_rel_enter
-
-tab parent_enter if timing_left==1
-tab rel_enter if timing_left==1
-tab non_rel_enter if timing_left==1
-
-gen bw60 = (earnings > .6*thearn_alt) 
-gen earnings_ratio = earnings / thearn_alt
-
-sum earnings_ratio if timing_left==1, detail
-
-tab who_max_earn if bw60==1
-replace who_max_earn=99 if who_max_earn==. & bw60==1
-
-tab who_max_earn if timing_left==1
-
-bysort SSUID PNUM year: egen total_earnings = total(earnings)
-bysort SSUID PNUM year: egen total_hh_earn = total(thearn_alt)
-gen total_ratio = total_earnings / total_hh_earn
-gen total_bw = (total_ratio>.6)
-
-tab bw60 total_bw if timing_left==1, row
-
-browse SSUID PNUM year timing_left who_max_earn hh_earn_max earnings thearn_alt earnings_a_sp earnings_ratio total_ratio partner_lose partner_gain bw60 if timing_left!=.
-
-restore
-*/
 
 	// Create a combined spouse & partner indicator
 *	gen 	spartner=1 	if spouse==1 | partner==1
@@ -616,7 +337,7 @@ collapse 	(count) monthsobserved=one  nmos_bw50=mbw50 nmos_bw60=mbw60 				/// mo
 					full_part_sp full_no_sp part_no_sp part_full_sp no_part_sp			///
 					no_full_sp educ_change_sp rmwkwjb weeks_employed_sp					///
 					program_income tanf_amount rtanfyn									///
-			(mean) 	spouse partner numtype2 wpfinwgt scaled_weight correction birth 	/// 
+			(mean) 	spouse partner numtype2 wpfinwgt scaled_weight birth 				/// 
 					mom_panel avg_hhsize = hhsize avg_hrs=tmwkhrs avg_earn=earnings  	///
 					numearner other_earner thincpovt2 pov_level start_marital_status 	///
 					last_marital_status tjb*_annsal1 tjb*_hourly1 tjb*_wkly1  			///
@@ -702,18 +423,3 @@ label values st_tjb*_occ end_tjb*_occ occ
 gen wave=year-2012
 	
 save "$SIPP14keep/annual_bw_status.dta", replace
-
-// answer question about wealth-generation
-browse SSUID PNUM year thinc_ast
-
-gen anywealthincome=0
-replace anywealthincome=1 if thinc_ast>0 & thinc_ast!=.
-tab anywealthincome
-
-gen wealthincome_100=0
-replace wealthincome_100=1 if thinc_ast>=100 & thinc_ast!=.
-tab wealthincome_100
-
-gen wealthincome_1000=0
-replace wealthincome_1000=1 if thinc_ast>=1000 & thinc_ast!=.
-tab  wealthincome_1000
