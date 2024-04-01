@@ -59,7 +59,7 @@ set maxvar 5500
 	
 // Create a monthly file with earnings & demographic measures. Create analytic sample.
 	log using "$logdir/measures_and_sample.log", replace
-	do "$projcode/06_sipp14_measures_and_sample.do"
+	do "$projcode/create-data/06_sipp14_measures_and_sample.do"
 	log close
 	
 // Merging with HH characteristics to use for predictions

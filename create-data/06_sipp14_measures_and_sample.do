@@ -532,7 +532,7 @@ preserve
 restore
 	
 // create output of sample size with restrictions
-dyndoc "$projcode/sample_size_2014.md", saving($results/sample_size_2014.html) replace
+// dyndoc "$projcode/sample_size_2014.md", saving($results/sample_size_2014.html) replace
 
 	
 save "$SIPP14keep/sipp14tpearn_all", replace
