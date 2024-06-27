@@ -457,6 +457,9 @@ tabstat hh_income_raw, by(educ_gp) stats(mean p50)
 tabstat hh_income_topcode, by(educ_gp) stats(mean p50)
 tabstat hh_income_chg_x, by(educ_gp) stats(mean p50)
 tabstat thearn_lag, by(educ_gp) stats(mean p50)
+tabstat thearn_lag if trans_bw60_alt2, by(educ_gp) stats(mean p50) // in table 3
+tabstat thearn if trans_bw60_alt2, by(educ_gp) stats(mean p50) //
+tabstat thearn_alt if trans_bw60_alt2, by(educ_gp) stats(mean p50) // I think this is right for POST
 tabstat pre_percentile, by(educ_gp) stats(mean p50)
 tabstat percentile_chg, by(educ_gp) stats(mean p50)
 tab educ_gp hh_chg_value, row
