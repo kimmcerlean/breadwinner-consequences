@@ -311,6 +311,8 @@ sum st_minorchildren if trans_bw60_alt2==0 & bw60lag==0
 
 tab educ_gp, gen(educ_gp)
 tab race_gp, gen(race_gp)
+tab race, gen(race)
+tab marital_status_t1, gen(marst)
 tab pathway, gen(pathway)
 
 ********************************************************************************
@@ -319,10 +321,15 @@ tab pathway, gen(pathway)
 putexcel set "$results/Breadwinner_Heterogeneity", sheet(Table1) replace
 putexcel A1 = "Descriptive Statistics", border(bottom) hcenter bold
 putexcel B1 = "Total Sample"
-putexcel C1 = "Single Mothers"
-putexcel D1 = "Partnered Mothers"
-putexcel E1 = "Relationship Dissolved"
-putexcel F1 = "Non-Primary-Earning Mothers"
+putexcel C1 = "Non-Primary-Earning Mothers"
+putexcel D1 = "All Eligible Mothers"
+putexcel E1 = "Transition Rate"
+/*
+putexcel E1 = "Single Mothers"
+putexcel F1 = "Partnered Mothers"
+putexcel G1 = "Relationship Dissolved"
+*/
+
 putexcel A2 = "Median HH income at time t-1"
 putexcel A3 = "Mothers' median income at time t-1 (employed mothers only)"
 putexcel A4 = "Race/ethnicity (time-invariant)"
@@ -338,34 +345,42 @@ putexcel A13 = "Relationship Status (time-varying)"
 putexcel A14 = "Married", txtindent(4)
 putexcel A15 = "Cohabitating", txtindent(4)
 putexcel A16 = "Single", txtindent(4)
-putexcel A17 = "Pathway into primary earning (time-varying)"
-putexcel A18 = "Partner separation", txtindent(4)
-putexcel A19 = "Mothers increase in earnings", txtindent(4)
-putexcel A20 = "Partner lost earnings", txtindent(4)
-putexcel A21 = "Mothers increase in earnings & partner lost earnings", txtindent(4)
-putexcel A22 = "Other member exit | lost earnings", txtindent(4)
+putexcel A17 = "Potential Event Pathway"
+putexcel A18 = "Mom Up, Unemployed", txtindent(4)
+putexcel A19 = "Mom Up, Employed", txtindent(4)
+putexcel A20 = "Mom Up Partner Down", txtindent(4)
+putexcel A21 = "Partner Down", txtindent(4)
+putexcel A22 = "Partner Exit", txtindent(4)
+putexcel A23 = "Other HH Change", txtindent(4)
+
+/*
 putexcel A23 = "Poverty and welfare"
 putexcel A24 = "HH had Zero Earnings in Year Prior", txtindent(4)
 putexcel A25 = "Mom had Zero Earnings in Year Prior", txtindent(4)
 putexcel A26 = "TANF in Year Prior", txtindent(4)
 putexcel A27 = "EITC in Year Prior", txtindent(4)
 putexcel A28 = "EITC in Year Became Primary Earner (reduced sample)", txtindent(4)
+*/
 
 *Income 
 * HH
 sum thearn_lag if thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
 putexcel B2=`r(p50)', nformat(###,###)
-sum thearn_lag if rel_status_detail==1 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel C2=`r(p50)', nformat(###,###)
-sum thearn_lag if rel_status_detail==2 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel D2=`r(p50)', nformat(###,###)
-sum thearn_lag if rel_status_detail==3 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel E2=`r(p50)', nformat(###,###)
 sum thearn_lag if thearn_lag!=0 & trans_bw60_alt2==0 & bw60lag==0, detail
+putexcel C2=`r(p50)', nformat(###,###)
+sum thearn_lag if thearn_lag!=0 & bw60lag==0, detail
+putexcel D2=`r(p50)', nformat(###,###)
+/*
+sum thearn_lag if rel_status_detail==1 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
+putexcel E2=`r(p50)', nformat(###,###)
+sum thearn_lag if rel_status_detail==2 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
 putexcel F2=`r(p50)', nformat(###,###)
+sum thearn_lag if rel_status_detail==3 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
+putexcel G2=`r(p50)', nformat(###,###)
 
 // or?
 sum thearn_lag if thearn_lag!=0 & bw60==0, detail // okay not that different
+*/
 
 *Mother
 /*
@@ -374,18 +389,20 @@ sum earnings if year==(year[_n+1]-1) & SSUID[_n+1]==SSUID & survey_yr==2 & trans
 */
 sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
 putexcel B3=`r(p50)', nformat(###,###)
-sum earnings_lag if rel_status_detail==1 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel C3=`r(p50)', nformat(###,###)
-sum earnings_lag if rel_status_detail==2 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel D3=`r(p50)', nformat(###,###)
-sum earnings_lag if rel_status_detail==3 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel E3=`r(p50)', nformat(###,###)
 sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==0 & bw60lag==0, detail 
+putexcel C3=`r(p50)', nformat(###,###)
+sum earnings_lag if earnings_lag!=0 & bw60lag==0, detail 
+putexcel D3=`r(p50)', nformat(###,###)
+/*
+sum earnings_lag if rel_status_detail==1 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
+putexcel E3=`r(p50)', nformat(###,###)
+sum earnings_lag if rel_status_detail==2 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
 putexcel F3=`r(p50)', nformat(###,###)
+sum earnings_lag if rel_status_detail==3 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
+putexcel G3=`r(p50)', nformat(###,###)
+*/
 
 * Race
-tab race, gen(race)
-
 local i=1
 
 foreach var in race1 race2 race3 race4{
@@ -395,7 +412,10 @@ foreach var in race1 race2 race3 race4{
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
 	mean `var' if trans_bw60_alt2==0 & bw60lag==0
 	matrix `var'_nobw = e(b)
-	putexcel F`row' = matrix(`var'_nobw), nformat(#.##%)
+	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
+	mean `var' if bw60lag==0
+	matrix `var'_all = e(b)
+	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
 }
 		
@@ -411,14 +431,15 @@ foreach var in educ_gp1 educ_gp2 educ_gp3{
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
 	mean `var' if trans_bw60_alt2==0 & bw60lag==0
 	matrix `var'_nobw = e(b)
-	putexcel F`row' = matrix(`var'_nobw), nformat(#.##%)
+	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
+	mean `var' if bw60lag==0
+	matrix `var'_all = e(b)
+	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
 }
 		
 	
 * Marital Status - December
-tab marital_status_t1, gen(marst)
-
 local i=1
 
 foreach var in marst1 marst2 marst3{
@@ -428,28 +449,37 @@ foreach var in marst1 marst2 marst3{
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
 	mean `var' if trans_bw60_alt2==0 & bw60lag==0
 	matrix `var'_nobw = e(b)
-	putexcel F`row' = matrix(`var'_nobw), nformat(#.##%)
+	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
+	mean `var' if bw60lag==0
+	matrix `var'_all = e(b)
+	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
 }
 
 * Pathway into breadwinning
 
 local i=1
+// ft_partner_leave mt_mom ft_partner_down_only ft_partner_down_mom lt_other_changes
 
-foreach var in ft_partner_leave mt_mom ft_partner_down_only ft_partner_down_mom lt_other_changes{
+foreach var in pathway2 pathway3 pathway4 pathway5 pathway6 pathway7{
 	local row = `i'+17
 	mean `var' if trans_bw60_alt2==1 & bw60lag==0 // remove svy to see if matches paper 1
 	matrix `var'_bw14 = e(b)
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
 	mean `var' if trans_bw60_alt2==0 & bw60lag==0
 	matrix `var'_nobw = e(b)
-	putexcel F`row' = matrix(`var'_nobw), nformat(#.##%)
+	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
+	mean `var' if bw60lag==0
+	matrix `var'_all = e(b)
+	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
 }
 
+
+/*
+* Poverty and welfare
 local i=1
 
-* Poverty and welfare
 foreach var in hh_from_0 start_from_0 tanf_lag eeitc eitc_after{
 	local row = `i'+23
 	mean `var' if trans_bw60_alt2==1 & bw60lag==0
@@ -457,16 +487,17 @@ foreach var in hh_from_0 start_from_0 tanf_lag eeitc eitc_after{
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
 	mean `var' if trans_bw60_alt2==0 & bw60lag==0
 	matrix `var'_nobw = e(b)
-	putexcel F`row' = matrix(`var'_nobw), nformat(#.##%)
+	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
 	local ++i
 }
+*/
 
-
+/* This is left over from JFEI?
 //// by partnership status
 
 * Race
 local i=1
-local colu "C D E"
+local colu "E F G"
 
 foreach var in race1 race2 race3 race4{
 	forvalues p=1/3{
@@ -482,7 +513,7 @@ foreach var in race1 race2 race3 race4{
 
 * Education
 local i=1
-local colu "C D E"
+local colu "E F G"
 
 foreach var in educ_gp1 educ_gp2 educ_gp3{
 	forvalues p=1/3{
@@ -498,7 +529,7 @@ foreach var in educ_gp1 educ_gp2 educ_gp3{
 	
 * Marital Status - December of prior year
 local i=1
-local colu "C D E"
+local colu "E F G"
 
 foreach var in marst1 marst2 marst3{
 	forvalues p=1/3{
@@ -513,7 +544,7 @@ foreach var in marst1 marst2 marst3{
 
 * Pathway into breadwinning
 local i=1
-local colu "C D E"
+local colu "E F G"
 
 foreach var in ft_partner_leave mt_mom ft_partner_down_only ft_partner_down_mom lt_other_changes{
 	forvalues p=1/3{
@@ -528,7 +559,7 @@ foreach var in ft_partner_leave mt_mom ft_partner_down_only ft_partner_down_mom 
 
 * Poverty and welfare
 local i=1
-local colu "C D E"
+local colu "E F G"
 
 foreach var in hh_from_0 start_from_0 tanf_lag eeitc eitc_after{
 	forvalues p=1/3{
@@ -540,6 +571,7 @@ foreach var in hh_from_0 start_from_0 tanf_lag eeitc eitc_after{
 	}
 	local ++i
 }
+*/
 
 ********************************************************************************
 **# Table 2: Summary of HH economic changes when mom becomes BW
@@ -554,17 +586,18 @@ putexcel A6 = "College", txtindent(4)
 putexcel A7 = "Race"
 putexcel A8 = "White", txtindent(4) 
 putexcel A9 = "Black", txtindent(4) 
-putexcel A10 = "Hispanic", txtindent(4) 
-putexcel A11 = "Pathway"
-putexcel A12 = "Mom Up, Unemployed", txtindent(4) 
-putexcel A13 = "Mom Up, Employed", txtindent(4) 
-putexcel A14 = "Mom Up Partner Down", txtindent(4) 
-putexcel A15 = "Partner Down", txtindent(4) 
-putexcel A16 = "Partner Left", txtindent(4) 
-putexcel A17 = "Other HH Change", txtindent(4) 
+putexcel A10 = "Asian", txtindent(4) 
+putexcel A11 = "Hispanic", txtindent(4) 
+putexcel A12 = "Pathway"
+putexcel A13 = "Mom Up, Unemployed", txtindent(4) 
+putexcel A14 = "Mom Up, Employed", txtindent(4) 
+putexcel A15 = "Mom Up Partner Down", txtindent(4) 
+putexcel A16 = "Partner Down", txtindent(4) 
+putexcel A17 = "Partner Left", txtindent(4) 
+putexcel A18 = "Other HH Change", txtindent(4) 
 
 
-/// split pathways by race / educ
+/// split pathways by education
 putexcel A19 = "Education x Pathway"
 putexcel A20 = "HS x Mom Up, Unemployed", txtindent(4) 
 putexcel A21 = "HS x Mom Up, Employed", txtindent(4) 
@@ -587,6 +620,36 @@ putexcel A35 = "College x Partner Down", txtindent(4)
 putexcel A36 = "College x Partner Left", txtindent(4) 
 putexcel A37 = "College x Other HH Change", txtindent(4) 
 
+/// split pathways by race
+putexcel A38 = "Race/ethnicity x Pathway"
+putexcel A39 = "White x Mom Up, Unemployed", txtindent(4) 
+putexcel A40 = "White x Mom Up, Employed", txtindent(4) 
+putexcel A41 = "White x Mom Up Partner Down", txtindent(4) 
+putexcel A42 = "White x Partner Down", txtindent(4) 
+putexcel A43 = "White x Partner Left", txtindent(4) 
+putexcel A44 = "White x Other HH Change", txtindent(4) 
+
+putexcel A45 = "Black x Mom Up, Unemployed", txtindent(4) 
+putexcel A46 = "Black x Mom Up, Employed", txtindent(4) 
+putexcel A47 = "Black x Mom Up Partner Down", txtindent(4) 
+putexcel A48 = "Black x Partner Down", txtindent(4) 
+putexcel A49 = "Black x Partner Left", txtindent(4) 
+putexcel A50 = "Black x Other HH Change", txtindent(4) 
+
+putexcel A51 = "Asian x Mom Up, Unemployed", txtindent(4) 
+putexcel A52 = "Asian x Mom Up, Employed", txtindent(4) 
+putexcel A53 = "Asian x Mom Up Partner Down", txtindent(4) 
+putexcel A54 = "Asian x Partner Down", txtindent(4) 
+putexcel A55 = "Asian x Partner Left", txtindent(4) 
+putexcel A56 = "Asian x Other HH Change", txtindent(4) 
+
+putexcel A57 = "Hispanic x Mom Up, Unemployed", txtindent(4) 
+putexcel A58 = "Hispanic x Mom Up, Employed", txtindent(4) 
+putexcel A59 = "Hispanic x Mom Up Partner Down", txtindent(4) 
+putexcel A60 = "Hispanic x Partner Down", txtindent(4) 
+putexcel A61 = "Hispanic x Partner Left", txtindent(4) 
+putexcel A62 = "Hispanic x Other HH Change", txtindent(4) 
+
 // labels
 putexcel B1 = "Distribution"
 putexcel D1 = "Average HH Income Pre-Transition"
@@ -604,23 +667,23 @@ putexcel N1 = "Median Increase (if increased)"
 local row1 "4 5 6"
 forvalues e=1/3{
 	local row: word `e' of `row1'
-	sum educ_gp`e' if trans_bw60_alt2==1
+	sum educ_gp`e' if trans_bw60_alt2==1 & bw60lag==0
 	putexcel B`row'=`r(mean)', nformat(#.##%)
 }
 
 
-local row1 "8 9 10"
-forvalues r=1/3{
+local row1 "8 9 10 11"
+forvalues r=1/4{
 	local row: word `r' of `row1'
-	sum race_gp`r' if trans_bw60_alt2==1
+	sum race`r' if trans_bw60_alt2==1 & bw60lag==0
 	putexcel B`row'=`r(mean)', nformat(#.##%)
 }
 
 
-local row1 "11 12 13 14 15 16 17"
+local row1 "12 13 14 15 16 17 18"
 forvalues p=2/7{
 	local row: word `p' of `row1'
-	sum pathway`p' if trans_bw60_alt2==1
+	sum pathway`p' if trans_bw60_alt2==1 & bw60lag==0
 	putexcel B`row'=`r(mean)', nformat(#.##%)
 }
 
@@ -628,14 +691,24 @@ forvalues p=2/7{
 forvalues e=1/3{
 	forvalues p=2/7{
 	local row = (`e' * 6) + `p' + 12
-	sum pathway`p' if trans_bw60_alt2==1 & educ_gp==`e'
+	sum pathway`p' if trans_bw60_alt2==1 & educ_gp==`e' & bw60lag==0
+	putexcel B`row'=`r(mean)', nformat(#.##%)
+	}
+}
+
+forvalues r=1/4{
+	forvalues p=2/7{
+	local row = (`r' * 6) + `p' + 31
+	sum pathway`p' if trans_bw60_alt2==1 & race==`r' & bw60lag==0
 	putexcel B`row'=`r(mean)', nformat(#.##%)
 	}
 }
 
 // put in data: average change
-tabstat thearn_lag thearn thearn_alt hh_income_raw if trans_bw60_alt2==1
-tabstat thearn_lag thearn thearn_alt hh_income_raw if trans_bw60_alt2==1 & educ_gp==1
+tabstat thearn_lag thearn thearn_alt hh_income_raw if trans_bw60_alt2==1 & bw60lag==0
+tabstat thearn_lag thearn thearn_alt hh_income_raw if trans_bw60_alt2==1 & educ_gp==1 & bw60lag==0
+tabstat thearn_lag thearn thearn_alt hh_income_raw if trans_bw60_alt2==1 & race==2 & bw60lag==0
+tabstat thearn_lag thearn thearn_alt hh_income_raw if trans_bw60_alt2==1 & race==2 & pathway==1 & bw60lag==0
 
 local average "thearn_lag thearn_alt hh_income_raw"
 local colu1 "D E F"
@@ -646,32 +719,32 @@ forvalues e=1/3{
 	local z=1
 	foreach var in `average'{
 		local col: word `z' of `colu1'
-		sum `var' if trans_bw60_alt2==1 & educ_gp==`e'
+		sum `var' if trans_bw60_alt2==1 & educ_gp==`e' & bw60lag==0
 		putexcel `col'`row'=`r(mean)', nformat(###,###)
 		local ++z
 	}
 }
 
 
-local row1 "8 9 10"
-forvalues r=1/3{
+local row1 "8 9 10 11"
+forvalues r=1/4{
 	local row: word `r' of `row1'
 	local z=1
 	foreach var in `average'{
 		local col: word `z' of `colu1'
-		sum `var' if trans_bw60_alt2==1 & race_gp==`r'
+		sum `var' if trans_bw60_alt2==1 & race==`r' & bw60lag==0
 		putexcel `col'`row'=`r(mean)', nformat(###,###)
 		local ++z
 	}
 }
 
-local row1 "12 13 14 15 16 17"
+local row1 "13 14 15 16 17 18"
 forvalues p=1/6{
 	local row: word `p' of `row1'
 	local z=1
 	foreach var in `average'{
 		local col: word `z' of `colu1'
-		sum `var' if trans_bw60_alt2==1 & pathway==`p'
+		sum `var' if trans_bw60_alt2==1 & pathway==`p' & bw60lag==0
 		putexcel `col'`row'=`r(mean)', nformat(###,###)
 		local ++z
 	}
@@ -683,8 +756,21 @@ forvalues e=1/3{
 	local z=1
 	foreach var in `average'{
 		local col: word `z' of `colu1'
-		sum `var' if trans_bw60_alt2==1 & educ_gp==`e' & pathway==`p'
+		sum `var' if trans_bw60_alt2==1 & educ_gp==`e' & pathway==`p' & bw60lag==0
 		putexcel `col'`row'=`r(mean)', nformat(###,###)
+		local ++z
+		}
+	}
+}
+
+forvalues r=1/4{
+	forvalues p=1/6{
+	local row = (`r' * 6) + `p' + 32
+	local z=1
+	foreach var in `average'{
+		local col: word `z' of `colu1'
+		capture sum `var' if trans_bw60_alt2==1 & race==`r' & pathway==`p' & bw60lag==0 // there is one cell (Asian + Partner Left) with no observations, so trying to get it to ignore errors and keep running
+		capture putexcel `col'`row'=`r(mean)', nformat(###,###)
 		local ++z
 		}
 	}
@@ -701,45 +787,57 @@ sum hh_income_raw if trans_bw60_alt2==1 & hh_chg_value==1 & educ_gp==1
 local row1 "4 5 6"
 forvalues e=1/3{
 	local row: word `e' of `row1'
-	sum hh_chg_value if trans_bw60_alt2==1 & educ_gp==`e'
+	sum hh_chg_value if trans_bw60_alt2==1 & educ_gp==`e' & bw60lag==0
 	putexcel H`row'=`r(mean)', nformat(##.#%)
-	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==0
+	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==0 & bw60lag==0
 	putexcel I`row'=`r(mean)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==1
+	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==1 & bw60lag==0
 	putexcel J`row'=`r(mean)', nformat(###,###)
 }
 
 
-local row1 "8 9 10"
-forvalues r=1/3{
+local row1 "8 9 10 11"
+forvalues r=1/4{
 	local row: word `r' of `row1'
-	sum hh_chg_value if trans_bw60_alt2==1 & race_gp==`r'
+	sum hh_chg_value if trans_bw60_alt2==1 & race==`r' & bw60lag==0
 	putexcel H`row'=`r(mean)', nformat(##.#%)
-	sum hh_income_raw if trans_bw60_alt2==1 & race_gp==`r' & hh_chg_value==0
+	sum hh_income_raw if trans_bw60_alt2==1 & race==`r' & hh_chg_value==0 & bw60lag==0
 	putexcel I`row'=`r(mean)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & race_gp==`r' & hh_chg_value==1
+	sum hh_income_raw if trans_bw60_alt2==1 & race==`r' & hh_chg_value==1 & bw60lag==0
 	putexcel J`row'=`r(mean)', nformat(###,###)
 }
 
-local row1 "12 13 14 15 16 17"
+local row1 "13 14 15 16 17 18"
 forvalues p=1/6{
 	local row: word `p' of `row1'
-	sum hh_chg_value if trans_bw60_alt2==1 & pathway==`p'
+	sum hh_chg_value if trans_bw60_alt2==1 & pathway==`p' & bw60lag==0
 	putexcel H`row'=`r(mean)', nformat(##.#%)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==0
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==0 & bw60lag==0
 	capture putexcel I`row'=`r(mean)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==1
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==1 & bw60lag==0
 	capture putexcel J`row'=`r(mean)', nformat(###,###)
 }
 
 forvalues e=1/3{
 	forvalues p=1/6{
 	local row = (`e' * 6) + `p' + 13
-	sum hh_chg_value if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' 
+	sum hh_chg_value if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & bw60lag==0
 	putexcel H`row'=`r(mean)', nformat(##.#%)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==0
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==0 & bw60lag==0
 	capture putexcel I`row'=`r(mean)', nformat(###,###) 
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==1
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==1 & bw60lag==0
+	capture putexcel J`row'=`r(mean)', nformat(###,###)
+	}
+}
+
+forvalues r=1/4{
+	forvalues p=1/6{
+	local row = (`r' * 6) + `p' + 32
+	capture sum hh_chg_value if trans_bw60_alt2==1 & pathway==`p' & race==`r' & bw60lag==0
+	capture putexcel H`row'=`r(mean)', nformat(##.#%)
+	capture sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & race==`r' & hh_chg_value==0 & bw60lag==0
+	capture putexcel I`row'=`r(mean)', nformat(###,###) 
+	capture sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & race==`r' & hh_chg_value==1 & bw60lag==0
 	capture putexcel J`row'=`r(mean)', nformat(###,###)
 	}
 }
@@ -752,45 +850,57 @@ sum hh_income_raw if trans_bw60_alt2==1 & hh_chg_value==1, detail
 local row1 "4 5 6"
 forvalues e=1/3{
 	local row: word `e' of `row1'
-	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e', detail
+	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & bw60lag==0, detail
 	putexcel L`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==0, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==0 & bw60lag==0, detail
 	putexcel M`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==1, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & educ_gp==`e' & hh_chg_value==1 & bw60lag==0, detail
 	putexcel N`row'=`r(p50)', nformat(###,###)
 }
 
 
-local row1 "8 9 10"
-forvalues r=1/3{
+local row1 "8 9 10 11"
+forvalues r=1/4{
 	local row: word `r' of `row1'
-	sum hh_income_raw if trans_bw60_alt2==1 & race_gp==`r', detail
+	sum hh_income_raw if trans_bw60_alt2==1 & race==`r' & bw60lag==0, detail
 	putexcel L`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & race_gp==`r' & hh_chg_value==0, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & race==`r' & hh_chg_value==0 & bw60lag==0, detail
 	putexcel M`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & race_gp==`r' & hh_chg_value==1, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & race==`r' & hh_chg_value==1 & bw60lag==0, detail
 	putexcel N`row'=`r(p50)', nformat(###,###)
 }
 
-local row1 "12 13 14 15 16 17"
+local row1 "13 14 15 16 17 18"
 forvalues p=1/6{
 	local row: word `p' of `row1'
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p', detail
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & bw60lag==0, detail
 	putexcel L`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==0, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==0 & bw60lag==0, detail
 	capture putexcel M`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==1, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & hh_chg_value==1 & bw60lag==0, detail
 	capture putexcel N`row'=`r(p50)', nformat(###,###)
 }
 
 forvalues e=1/3{
 	forvalues p=1/6{
 	local row = (`e' * 6) + `p' + 13
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e', detail
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & bw60lag==0, detail
 	putexcel L`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==0, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==0 & bw60lag==0, detail
 	capture putexcel M`row'=`r(p50)', nformat(###,###)
-	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==1, detail
+	sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & educ_gp==`e' & hh_chg_value==1 & bw60lag==0, detail
+	capture putexcel N`row'=`r(p50)', nformat(###,###)
+	}
+}
+
+forvalues r=1/4{
+	forvalues p=1/6{
+	local row = (`r' * 6) + `p' + 32
+	capture sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & race==`r' & bw60lag==0, detail
+	capture putexcel L`row'=`r(p50)', nformat(###,###)
+	capture sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & race==`r' & hh_chg_value==0 & bw60lag==0, detail
+	capture capture putexcel M`row'=`r(p50)', nformat(###,###)
+	capture sum hh_income_raw if trans_bw60_alt2==1 & pathway==`p' & race==`r' & hh_chg_value==1 & bw60lag==0, detail
 	capture putexcel N`row'=`r(p50)', nformat(###,###)
 	}
 }

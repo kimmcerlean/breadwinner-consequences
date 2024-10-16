@@ -595,8 +595,8 @@ logit hh_chg_value i.educ_gp if trans_bw60_alt2==1, or
 outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M1) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform replace
 logit hh_chg_value i.race_gp if trans_bw60_alt2==1, or
 outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M2) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
-logit hh_chg_value i.educ_gp i.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
-logit hh_chg_value i.educ_gp##ib3.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
+logit hh_chg_value i.educ_gp i.pathway if trans_bw60_alt2==1, or
+logit hh_chg_value i.educ_gp i.pathway if trans_bw60_alt2==1, or
 
 // logit hh_chg_value i.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
 // outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M3) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
