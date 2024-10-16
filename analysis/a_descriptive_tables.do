@@ -315,6 +315,9 @@ tab race, gen(race)
 tab marital_status_t1, gen(marst)
 tab pathway, gen(pathway)
 
+unique SSUID PNUM if trans_bw60_alt2==1 & bw60lag==0
+unique SSUID PNUM if bw60lag==0
+
 ********************************************************************************
 **# Descriptive statistics
 ********************************************************************************
@@ -349,35 +352,37 @@ putexcel A22 = "Partner Exit", txtindent(4)
 putexcel A23 = "Other HH Change", txtindent(4)
 
 
-*Income 
+// Income 
 * HH
-sum thearn_lag if thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel B2=`r(p50)', nformat(###,###)
-sum thearn_lag if thearn_lag!=0 & trans_bw60_alt2==0 & bw60lag==0, detail
-putexcel C2=`r(p50)', nformat(###,###)
-sum thearn_lag if thearn_lag!=0 & bw60lag==0, detail
-putexcel D2=`r(p50)', nformat(###,###)
+sum thearn_lag if trans_bw60_alt2==1 & bw60lag==0, detail
+putexcel B2=`r(mean)', nformat(###,###)
+sum thearn_lag if trans_bw60_alt2==0 & bw60lag==0, detail
+putexcel C2=`r(mean)', nformat(###,###)
+sum thearn_lag if bw60lag==0, detail
+putexcel D2=`r(mean)', nformat(###,###)
 
+*Mother
 sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel B3=`r(p50)', nformat(###,###)
+putexcel B3=`r(mean)', nformat(###,###)
 sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==0 & bw60lag==0, detail 
-putexcel C3=`r(p50)', nformat(###,###)
+putexcel C3=`r(mean)', nformat(###,###)
 sum earnings_lag if earnings_lag!=0 & bw60lag==0, detail 
-putexcel D3=`r(p50)', nformat(###,###)
+putexcel D3=`r(mean)', nformat(###,###)
 
 
+// Distributions
 * Race
 local i=1
 
 foreach var in race1 race2 race3 race4{
 	local row = `i'+4
-	mean `var' if trans_bw60_alt2==1 & bw60lag==0
+	mean `var' if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_bw14 = e(b)
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
-	mean `var' if trans_bw60_alt2==0 & bw60lag==0
+	mean `var' if trans_bw60_alt2==0 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_nobw = e(b)
 	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
-	mean `var' if bw60lag==0
+	mean `var' if bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_all = e(b)
 	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
@@ -390,13 +395,13 @@ local i=1
 
 foreach var in educ_gp1 educ_gp2 educ_gp3{
 	local row = `i'+9
-	mean `var' if trans_bw60_alt2==1 & bw60lag==0
+	mean `var' if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_bw14 = e(b)
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
-	mean `var' if trans_bw60_alt2==0 & bw60lag==0
+	mean `var' if trans_bw60_alt2==0 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_nobw = e(b)
 	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
-	mean `var' if bw60lag==0
+	mean `var' if bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_all = e(b)
 	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
@@ -408,13 +413,13 @@ local i=1
 
 foreach var in marst1 marst2 marst3{
 	local row = `i'+13
-	mean `var' if trans_bw60_alt2==1 & bw60lag==0
+	mean `var' if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_bw14 = e(b)
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
-	mean `var' if trans_bw60_alt2==0 & bw60lag==0
+	mean `var' if trans_bw60_alt2==0 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_nobw = e(b)
 	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
-	mean `var' if bw60lag==0
+	mean `var' if bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_all = e(b)
 	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
@@ -427,17 +432,56 @@ local i=1
 
 foreach var in pathway2 pathway3 pathway4 pathway5 pathway6 pathway7{
 	local row = `i'+17
-	mean `var' if trans_bw60_alt2==1 & bw60lag==0 // remove svy to see if matches paper 1
+	mean `var' if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight] // remove svy to see if matches paper 1
 	matrix `var'_bw14 = e(b)
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
-	mean `var' if trans_bw60_alt2==0 & bw60lag==0
+	mean `var' if trans_bw60_alt2==0 & bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_nobw = e(b)
 	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
-	mean `var' if bw60lag==0
+	mean `var' if bw60lag==0 [aweight=scaled_weight]
 	matrix `var'_all = e(b)
 	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
 }
+
+// BW Transition rate
+* Race
+local row1 "5 6 7 8"
+
+forvalues r=1/4{
+	local row: word `r' of `row1'
+	sum trans_bw60_alt2 if race==`r' & bw60lag==0 [aweight=scaled_weight]
+	putexcel E`row'=`r(mean)', nformat(#.##%)
+}
+
+* Education
+local row1 "10 11 12"
+
+forvalues e=1/3{
+	local row: word `e' of `row1'
+	sum trans_bw60_alt2 if educ_gp==`e' & bw60lag==0 [aweight=scaled_weight]
+	putexcel E`row'=`r(mean)', nformat(#.##%)
+}
+	
+	
+* Marital Status - December
+local row1 "14 15 16"
+
+forvalues s=1/3{
+	local row: word `s' of `row1'
+	sum trans_bw60_alt2 if marital_status_t1==`s' & bw60lag==0 [aweight=scaled_weight]
+	putexcel E`row'=`r(mean)', nformat(#.##%)
+}
+
+* Pathway into breadwinning
+local row1 "18 19 20 21 22 23"
+
+forvalues p=1/6{
+	local row: word `p' of `row1'
+	sum trans_bw60_alt2 if pathway==`p' & bw60lag==0 [aweight=scaled_weight]
+	putexcel E`row'=`r(mean)', nformat(#.##%)
+}
+
 
 ********************************************************************************
 **# Table 2: Summary of HH economic changes when mom becomes BW
