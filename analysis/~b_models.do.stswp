@@ -1629,12 +1629,10 @@ save "$tempdir/bw_consequences_long.dta", replace
 
 
 /* moving most of this to step a, because that logistically makes sense
-
 ********************************************************************************
 **# To get descriptives for comparison to all eligible mothers
 ********************************************************************************
 use "$SIPP14keep/annual_bw_status2014.dta", clear // created in step 10
-
 // race recode
 recode race (1=1) (2=2)(4=3)(3=4)(5=4), gen(race_gp)
 label define race_gp 1 "White" 2 "Black" 3 "Hispanic"

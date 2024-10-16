@@ -482,6 +482,132 @@ forvalues p=1/6{
 	putexcel E`row'=`r(mean)', nformat(#.##%)
 }
 
+// t-tests comparing samples - is this possible because they are nested in each other? I guess I can compare transitioners from not? because teh all eligible mothers essentially reflects those mothers most. also they can't be weighted... is this problematic?
+// For the equivalent of a two-sample t test with sampling weights (pweights), use the svy: mean
+// command with the over() option, and then use lincom; see [R] mean and [SVY] svy postestimation.
+
+svyset [pweight=scaled_weight]
+tab educ_gp if trans_bw60_alt2==1 & bw60lag==0
+tab educ_gp if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+svy: tab educ_gp if trans_bw60_alt2==1 & bw60lag==0
+
+*Education
+ttest educ_gp1 if bw60lag==0, by(trans_bw60_alt2)
+ttest educ_gp2 if bw60lag==0, by(trans_bw60_alt2)
+ttest educ_gp3 if bw60lag==0, by(trans_bw60_alt2)
+
+svy: mean educ_gp1 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.educ_gp1@0bn.trans_bw60_alt2] - _b[c.educ_gp1@1.trans_bw60_alt2]
+
+svy: mean educ_gp2 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.educ_gp2@0bn.trans_bw60_alt2] - _b[c.educ_gp2@1.trans_bw60_alt2]
+
+svy: mean educ_gp3 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.educ_gp3@0bn.trans_bw60_alt2] - _b[c.educ_gp3@1.trans_bw60_alt2]
+
+*Race
+ttest race1 if bw60lag==0, by(trans_bw60_alt2) // white
+ttest race2 if bw60lag==0, by(trans_bw60_alt2) // black
+ttest race4 if bw60lag==0, by(trans_bw60_alt2) // hisp
+ttest race3 if bw60lag==0, by(trans_bw60_alt2) // asian
+
+svy: mean race1 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.race1@0bn.trans_bw60_alt2] - _b[c.race1@1.trans_bw60_alt2]
+
+svy: mean race2 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.race2@0bn.trans_bw60_alt2] - _b[c.race2@1.trans_bw60_alt2]
+
+svy: mean race4 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.race4@0bn.trans_bw60_alt2] - _b[c.race4@1.trans_bw60_alt2]
+
+svy: mean race3 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.race3@0bn.trans_bw60_alt2] - _b[c.race3@1.trans_bw60_alt2]
+
+*Marital status
+ttest marst1 if bw60lag==0, by(trans_bw60_alt2) // Married
+ttest marst2 if bw60lag==0, by(trans_bw60_alt2) // Cohab
+ttest marst3 if bw60lag==0, by(trans_bw60_alt2) // Single
+
+svy: mean marst1 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.marst1@0bn.trans_bw60_alt2] - _b[c.marst1@1.trans_bw60_alt2]
+
+svy: mean marst2 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.marst2@0bn.trans_bw60_alt2] - _b[c.marst2@1.trans_bw60_alt2]
+
+svy: mean marst3 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.marst3@0bn.trans_bw60_alt2] - _b[c.marst3@1.trans_bw60_alt2]
+
+*Pathway
+ttest pathway2 if bw60lag==0, by(trans_bw60_alt2) // mom up unemployed
+ttest pathway3 if bw60lag==0, by(trans_bw60_alt2)
+ttest pathway4 if bw60lag==0, by(trans_bw60_alt2)
+ttest pathway5 if bw60lag==0, by(trans_bw60_alt2)
+ttest pathway6 if bw60lag==0, by(trans_bw60_alt2)
+ttest pathway7 if bw60lag==0, by(trans_bw60_alt2) // other HH change
+
+svy: mean pathway2 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.pathway2@0bn.trans_bw60_alt2] - _b[c.pathway2@1.trans_bw60_alt2]
+
+svy: mean pathway3 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.pathway3@0bn.trans_bw60_alt2] - _b[c.pathway3@1.trans_bw60_alt2]
+
+svy: mean pathway4 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.pathway4@0bn.trans_bw60_alt2] - _b[c.pathway4@1.trans_bw60_alt2]
+
+svy: mean pathway5 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.pathway5@0bn.trans_bw60_alt2] - _b[c.pathway5@1.trans_bw60_alt2]
+
+svy: mean pathway6 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.pathway6@0bn.trans_bw60_alt2] - _b[c.pathway6@1.trans_bw60_alt2]
+
+svy: mean pathway7 if bw60lag==0, over(trans_bw60_alt2)
+lincom _b[c.pathway7@0bn.trans_bw60_alt2] - _b[c.pathway7@1.trans_bw60_alt2]
+
+*mother's employment variable as well (prob should integrate above eventually)
+tab start_from_0 if trans_bw60_alt2==1 & bw60lag==0
+
+gen employed_t0=0
+replace employed_t0=1 if start_from_0==0
+
+tab trans_bw60_alt2 employed_t0 if bw60lag==0 [aweight=scaled_weight], row
+tab employed_t0 if bw60lag==0 [aweight=scaled_weight]
+
+tab employed_t0 trans_bw60_alt2 if bw60lag==0 [aweight=scaled_weight], row // transition rate
+
+ttest employed_t0 if bw60lag==0, by(trans_bw60_alt2)
+svy: mean employed_t0 if bw60lag==0, over(trans_bw60_alt2) coeflegend
+lincom _b[c.employed_t0@0bn.trans_bw60_alt2] - _b[c.employed_t0@1.trans_bw60_alt2]
+
+ttest earnings_lag if bw60lag==0 & earnings_lag!=0, by(trans_bw60_alt2)  
+
+// adding info on HH composition (created file 10 in 2014 folder) 
+merge 1:1 SSUID PNUM year using "$tempdir/household_lookup.dta"
+drop if _merge==2
+drop _merge
+
+sum avg_hhsize if bw60lag==0 [aweight=scaled_weight]
+sum avg_hhsize if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+ttest avg_hhsize if bw60lag==0, by(trans_bw60_alt2) 
+svy: mean avg_hhsize if bw60lag==0, over(trans_bw60_alt2) coeflegend
+lincom _b[c.avg_hhsize@0bn.trans_bw60_alt2] -  _b[c.avg_hhsize@1.trans_bw60_alt2]
+
+sum st_minorchildren if bw60lag==0 [aweight=scaled_weight]
+sum st_minorchildren if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+ttest st_minorchildren if bw60lag==0, by(trans_bw60_alt2) 
+svy: mean st_minorchildren if bw60lag==0, over(trans_bw60_alt2) coeflegend
+lincom _b[c.st_minorchildren@0bn.trans_bw60_alt2] -  _b[c.st_minorchildren@1.trans_bw60_alt2]
+
+sum end_minorchildren if bw60lag==0 [aweight=scaled_weight]
+sum end_minorchildren if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+ttest end_minorchildren if bw60lag==0, by(trans_bw60_alt2) 
+
+tab extended_hh if bw60lag==0 [aweight=scaled_weight]
+tab extended_hh if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+ttest extended_hh if bw60lag==0, by(trans_bw60_alt2) 
+svy: mean extended_hh if bw60lag==0, over(trans_bw60_alt2) coeflegend
+lincom _b[c.extended_hh@0bn.trans_bw60_alt2] -  _b[c.extended_hh@1.trans_bw60_alt2]
+
+ttest thearn_lag if bw60lag==0, by(trans_bw60_alt2) 
 
 ********************************************************************************
 **# Table 2: Summary of HH economic changes when mom becomes BW
