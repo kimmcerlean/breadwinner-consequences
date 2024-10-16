@@ -324,11 +324,6 @@ putexcel B1 = "Total Sample"
 putexcel C1 = "Non-Primary-Earning Mothers"
 putexcel D1 = "All Eligible Mothers"
 putexcel E1 = "Transition Rate"
-/*
-putexcel E1 = "Single Mothers"
-putexcel F1 = "Partnered Mothers"
-putexcel G1 = "Relationship Dissolved"
-*/
 
 putexcel A2 = "Median HH income at time t-1"
 putexcel A3 = "Mothers' median income at time t-1 (employed mothers only)"
@@ -353,14 +348,6 @@ putexcel A21 = "Partner Down", txtindent(4)
 putexcel A22 = "Partner Exit", txtindent(4)
 putexcel A23 = "Other HH Change", txtindent(4)
 
-/*
-putexcel A23 = "Poverty and welfare"
-putexcel A24 = "HH had Zero Earnings in Year Prior", txtindent(4)
-putexcel A25 = "Mom had Zero Earnings in Year Prior", txtindent(4)
-putexcel A26 = "TANF in Year Prior", txtindent(4)
-putexcel A27 = "EITC in Year Prior", txtindent(4)
-putexcel A28 = "EITC in Year Became Primary Earner (reduced sample)", txtindent(4)
-*/
 
 *Income 
 * HH
@@ -370,37 +357,14 @@ sum thearn_lag if thearn_lag!=0 & trans_bw60_alt2==0 & bw60lag==0, detail
 putexcel C2=`r(p50)', nformat(###,###)
 sum thearn_lag if thearn_lag!=0 & bw60lag==0, detail
 putexcel D2=`r(p50)', nformat(###,###)
-/*
-sum thearn_lag if rel_status_detail==1 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel E2=`r(p50)', nformat(###,###)
-sum thearn_lag if rel_status_detail==2 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel F2=`r(p50)', nformat(###,###)
-sum thearn_lag if rel_status_detail==3 & thearn_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail
-putexcel G2=`r(p50)', nformat(###,###)
 
-// or?
-sum thearn_lag if thearn_lag!=0 & bw60==0, detail // okay not that different
-*/
-
-*Mother
-/*
-sum earnings if year==(year[_n+1]-1) & SSUID[_n+1]==SSUID & survey_yr==2 & trans_bw60_alt2[_n+1]==1 & bw60lag[_n+1]==0, detail  // okay yes this is right, but before I had the below - which is wrong, because need the earnings to lag the bw
-sum earnings if year==(year[_n+1]-1) & SSUID[_n+1]==SSUID & survey_yr==2 & trans_bw60_alt2==1 & bw60lag==0, detail
-*/
 sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
 putexcel B3=`r(p50)', nformat(###,###)
 sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==0 & bw60lag==0, detail 
 putexcel C3=`r(p50)', nformat(###,###)
 sum earnings_lag if earnings_lag!=0 & bw60lag==0, detail 
 putexcel D3=`r(p50)', nformat(###,###)
-/*
-sum earnings_lag if rel_status_detail==1 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel E3=`r(p50)', nformat(###,###)
-sum earnings_lag if rel_status_detail==2 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel F3=`r(p50)', nformat(###,###)
-sum earnings_lag if rel_status_detail==3 & earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0, detail 
-putexcel G3=`r(p50)', nformat(###,###)
-*/
+
 
 * Race
 local i=1
@@ -474,104 +438,6 @@ foreach var in pathway2 pathway3 pathway4 pathway5 pathway6 pathway7{
 	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
 	local ++i
 }
-
-
-/*
-* Poverty and welfare
-local i=1
-
-foreach var in hh_from_0 start_from_0 tanf_lag eeitc eitc_after{
-	local row = `i'+23
-	mean `var' if trans_bw60_alt2==1 & bw60lag==0
-	matrix `var'_bw14 = e(b)
-	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
-	mean `var' if trans_bw60_alt2==0 & bw60lag==0
-	matrix `var'_nobw = e(b)
-	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
-	local ++i
-}
-*/
-
-/* This is left over from JFEI?
-//// by partnership status
-
-* Race
-local i=1
-local colu "E F G"
-
-foreach var in race1 race2 race3 race4{
-	forvalues p=1/3{
-		local row = `i'+4
-		local col: word `p' of `colu'
-		mean `var' if rel_status_detail==`p' & trans_bw60_alt2==1 & bw60lag==0
-		matrix `var'_`p' = e(b)
-		putexcel `col'`row' = matrix(`var'_`p'), nformat(#.##%)
-	}
-	local ++i
-}
-
-
-* Education
-local i=1
-local colu "E F G"
-
-foreach var in educ_gp1 educ_gp2 educ_gp3{
-	forvalues p=1/3{
-		local row = `i'+9
-		local col: word `p' of `colu'
-		mean `var' if rel_status_detail==`p' & trans_bw60_alt2==1 & bw60lag==0
-		matrix `var'_`p' = e(b)
-		putexcel `col'`row' = matrix(`var'_`p'), nformat(#.##%)
-	}
-	local ++i
-}
-		
-	
-* Marital Status - December of prior year
-local i=1
-local colu "E F G"
-
-foreach var in marst1 marst2 marst3{
-	forvalues p=1/3{
-		local row = `i'+13
-		local col: word `p' of `colu'
-		mean `var' if rel_status_detail==`p' & trans_bw60_alt2==1 & bw60lag==0
-		matrix `var'_`p' = e(b)
-		putexcel `col'`row' = matrix(`var'_`p'), nformat(#.##%)
-	}
-	local ++i
-}
-
-* Pathway into breadwinning
-local i=1
-local colu "E F G"
-
-foreach var in ft_partner_leave mt_mom ft_partner_down_only ft_partner_down_mom lt_other_changes{
-	forvalues p=1/3{
-		local row = `i'+17
-		local col: word `p' of `colu'
-		mean `var' if rel_status_detail==`p' & trans_bw60_alt2==1 & bw60lag==0
-		matrix `var'_`p' = e(b)
-		putexcel `col'`row' = matrix(`var'_`p'), nformat(#.##%)
-	}
-	local ++i
-}
-
-* Poverty and welfare
-local i=1
-local colu "E F G"
-
-foreach var in hh_from_0 start_from_0 tanf_lag eeitc eitc_after{
-	forvalues p=1/3{
-		local row = `i'+23
-		local col: word `p' of `colu'
-		mean `var' if rel_status_detail==`p' & trans_bw60_alt2==1 & bw60lag==0
-		matrix `var'_`p' = e(b)
-		putexcel `col'`row' = matrix(`var'_`p'), nformat(#.##%)
-	}
-	local ++i
-}
-*/
 
 ********************************************************************************
 **# Table 2: Summary of HH economic changes when mom becomes BW
