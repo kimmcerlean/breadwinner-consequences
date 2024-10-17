@@ -482,6 +482,7 @@ forvalues p=1/6{
 	putexcel E`row'=`r(mean)', nformat(#.##%)
 }
 
+**# Sample comparisons
 // t-tests comparing samples - is this possible because they are nested in each other? I guess I can compare transitioners from not? because teh all eligible mothers essentially reflects those mothers most. also they can't be weighted... is this problematic?
 // For the equivalent of a two-sample t test with sampling weights (pweights), use the svy: mean
 // command with the over() option, and then use lincom; see [R] mean and [SVY] svy postestimation.

@@ -84,6 +84,10 @@ replace pathway=6 if lt_other_changes==1
 label define pathway 0 "None" 1 "Mom Up, Not employed" 2 "Mom Up, employed" 3 "Mom Up Partner Down" 4 "Partner Down" 5 "Partner Left" 6 "Other HH Change"
 label values pathway pathway
 
+// mom employed prior to transition
+gen employed_t0=0
+replace employed_t0=1 if start_from_0==0
+
 // program variables
 gen tanf=0
 replace tanf=1 if tanf_amount > 0
@@ -511,6 +515,9 @@ tab pov_change_detail income_change, row
 tab educ_gp pathway, row nofreq
 tab race pathway, row nofreq
 
+tab pathway educ_gp if trans_bw60_alt2==1, col nofreq
+tab pathway race  if trans_bw60_alt2==1, col nofreq
+
 tab educ_gp pathway, row nofreq chi2 // Pearson chi2(10) =  99.1910   Pr = 0.000
 tab race pathway, row nofreq chi2 // Pearson chi2(20) =  90.6400   Pr = 0.000
 
@@ -588,37 +595,219 @@ tabstat percentile_chg if race_gp==3, by(pathway) stats(mean p50)
 
 ********************************************************************************
 **# Bookmark #1
-* Models to use
+* MODELS TO USE
 ********************************************************************************
+// add some control variables
+gen num_children=0
+replace num_children=1 if st_minorchildren==1
+replace num_children=2 if st_minorchildren==2
+replace num_children=3 if st_minorchildren>2
+
+gen thearn_lag_ln = ln(thearn_lag+.01)
+histogram thearn_lag if trans_bw60_alt2==1 & thearn_lag <=500000
+histogram thearn_lag_ln if trans_bw60_alt2==1 
+histogram thearn_lag if trans_bw60_alt2==1 & thearn_lag>0 & thearn_lag<=500000
+histogram thearn_lag_ln if trans_bw60_alt2==1 & thearn_lag>0
+
+gen thearn_lag_1000s = thearn_lag / 1000
+gen income_change_1000s = hh_income_topcode / 1000
+
 ** did income change
 logit hh_chg_value i.educ_gp if trans_bw60_alt2==1, or
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M1) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform replace
-logit hh_chg_value i.race_gp if trans_bw60_alt2==1, or
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M2) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
-logit hh_chg_value i.educ_gp i.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
-logit hh_chg_value i.educ_gp##ib3.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(Chg1) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform replace
+logit hh_chg_value i.race if trans_bw60_alt2==1, or
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(Chg2) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
+logit hh_chg_value i.educ_gp i.race if trans_bw60_alt2==1, or
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(Chg3) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
+logit hh_chg_value i.educ_gp i.race c.avg_hhsize i.marital_status_t1 i.extended_hh i.employed_t0 if trans_bw60_alt2==1, or
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(Chg4) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
+logit hh_chg_value i.educ_gp i.race c.avg_hhsize i.marital_status_t1 i.extended_hh i.employed_t0 c.thearn_lag_1000s if trans_bw60_alt2==1, or
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(Chg5) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
 
+// logit hh_chg_value i.educ_gp i.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
+// logit hh_chg_value i.educ_gp##ib3.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
 // logit hh_chg_value i.pathway if trans_bw60_alt2==1, or // not going to work bc overdetermined
 // outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M3) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) eform append
 // logit hh_chg_value i.pathway i.race i.educ_gp if trans_bw60_alt2==1, or
 
-** raw income change
-regress hh_income_raw i.educ_gp if trans_bw60_alt2==1
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M3) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
-regress hh_income_raw i.race_gp if trans_bw60_alt2==1
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M4) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
-regress hh_income_raw i.pathway if trans_bw60_alt2==1
-regress hh_income_raw ib3.pathway if trans_bw60_alt2==1
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M5) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
-regress hh_income_raw i.educ_gp ib3.pathway if trans_bw60_alt2==1
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M6) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
-regress hh_income_raw ib3.pathway i.race_gp i.educ_gp if trans_bw60_alt2==1
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M7) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
-regress hh_income_raw i.educ_gp##i.pathway i.race_gp if trans_bw60_alt2==1
-regress hh_income_raw i.educ_gp##ib3.pathway i.race_gp if trans_bw60_alt2==1
-outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M8) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
-regress hh_income_raw ib3.educ_gp##ib3.pathway i.race_gp if trans_bw60_alt2==1
+** raw income change = prob topcode (per JG convo) - and using 1000s of dollars to make coefficients less crazy
+sum hh_income_raw if trans_bw60_alt2==1, detail
+sum hh_income_topcode if trans_bw60_alt2==1, detail
 
+regress income_change_1000s i.educ_gp if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M1) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.race if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M2) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s ib3.pathway if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M3) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.educ_gp i.race if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M4) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.educ_gp i.race ib3.pathway if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M5) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.educ_gp##ib3.pathway i.race if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M6) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.race##ib3.pathway i.educ_gp if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M7) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+
+// adding controls - not including i.employed_t0 here bc too collinear with some of the pathways.
+regress income_change_1000s i.educ_gp i.race ib3.pathway c.avg_hhsize i.marital_status_t1 i.extended_hh if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M8) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.educ_gp i.race ib3.pathway c.avg_hhsize i.marital_status_t1 i.extended_hh c.thearn_lag_1000s if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M9) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.educ_gp##ib3.pathway i.race c.avg_hhsize i.marital_status_t1 i.extended_hh if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M10) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.educ_gp##ib3.pathway i.race c.avg_hhsize i.marital_status_t1 i.extended_hh c.thearn_lag_1000s if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M11) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.race##ib3.pathway i.educ_gp c.avg_hhsize i.marital_status_t1 i.extended_hh if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M12) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+regress income_change_1000s i.race##ib3.pathway i.educ_gp c.avg_hhsize i.marital_status_t1 i.extended_hh c.thearn_lag_1000s if trans_bw60_alt2==1
+outreg2 using "$results/regression_heterogeneity.xls", stats(coef) label ctitle(M13) dec(2) alpha(0.001, 0.01, 0.05, 0.10) symbol(***, **, *, +) append
+
+********************************************************************************
+**comparing regression coefficients across models
+********************************************************************************
+** did income go up or down (using LPMs)
+regress hh_chg_value i.educ_gp if trans_bw60_alt2==1
+estimates store c1
+
+regress hh_chg_value i.race if trans_bw60_alt2==1
+estimates store c2
+
+regress hh_chg_value i.educ_gp i.race if trans_bw60_alt2==1
+estimates store c3
+
+regress hh_chg_value i.educ_gp i.race c.avg_hhsize i.marital_status_t1 i.extended_hh i.employed_t0 if trans_bw60_alt2==1
+estimates store c4
+
+regress hh_chg_value i.educ_gp i.race c.avg_hhsize i.marital_status_t1 i.extended_hh i.employed_t0 c.thearn_lag_1000s if trans_bw60_alt2==1
+estimates store c5
+
+suest c1 c2 c3 c4 c5, coeflegend
+
+//education
+	// when race added
+	test [c1_mean]2.educ_gp=[c3_mean]2.educ_gp // some college
+	test [c1_mean]3.educ_gp=[c3_mean]3.educ_gp // college
+	
+	// when first set of controls added
+	test [c1_mean]2.educ_gp=[c4_mean]2.educ_gp // some college
+	test [c1_mean]3.educ_gp=[c4_mean]3.educ_gp // college
+	
+	// when prior HH income added
+	test [c1_mean]2.educ_gp=[c5_mean]2.educ_gp // some college
+	test [c1_mean]3.educ_gp=[c5_mean]3.educ_gp // college
+	
+//race
+	// when education added
+	test [c2_mean]2.race=[c3_mean]2.race // black
+	test [c2_mean]4.race=[c3_mean]4.race // hispanic
+	test [c2_mean]3.race=[c3_mean]3.race // asian
+	test [c2_mean]5.race=[c3_mean]5.race // other
+
+	// when first set of controls added
+	test [c2_mean]2.race=[c4_mean]2.race // black
+	test [c2_mean]4.race=[c4_mean]4.race // hispanic
+	test [c2_mean]3.race=[c4_mean]3.race // asian
+	test [c2_mean]5.race=[c4_mean]5.race // other
+	
+	// when prior HH income added
+	test [c2_mean]2.race=[c5_mean]2.race // black
+	test [c2_mean]4.race=[c5_mean]4.race // hispanic
+	test [c2_mean]3.race=[c5_mean]3.race // asian
+	test [c2_mean]5.race=[c5_mean]5.race // other
+
+** raw dollars
+regress income_change_1000s i.educ_gp if trans_bw60_alt2==1
+estimates store m1e
+
+regress income_change_1000s i.race if trans_bw60_alt2==1
+estimates store m1r
+
+regress income_change_1000s ib3.pathway if trans_bw60_alt2==1
+estimates store m1p
+
+regress income_change_1000s i.educ_gp i.race if trans_bw60_alt2==1
+estimates store m3
+
+regress income_change_1000s i.educ_gp i.race ib3.pathway if trans_bw60_alt2==1
+estimates store m4
+
+regress income_change_1000s i.educ_gp i.race ib3.pathway c.avg_hhsize i.marital_status_t1 i.extended_hh if trans_bw60_alt2==1
+estimates store m5
+
+regress income_change_1000s i.educ_gp i.race ib3.pathway c.avg_hhsize i.marital_status_t1 i.extended_hh c.thearn_lag_1000s if trans_bw60_alt2==1
+estimates store m6
+
+suest m1e m1r m1p m3 m4 m5 m6, coeflegend
+
+//education
+	// when race added
+	test [m1_mean]2.educ_gp=[m3_mean]2.educ_gp // some college
+	test [m1_mean]3.educ_gp=[m3_mean]3.educ_gp // college
+	
+	// when pathway added
+	test [m1_mean]2.educ_gp=[m4_mean]2.educ_gp // some college
+	test [m1_mean]3.educ_gp=[m4_mean]3.educ_gp // college
+	
+	// when first set of controls added
+	test [m1_mean]2.educ_gp=[m5_mean]2.educ_gp // some college
+	test [m1_mean]3.educ_gp=[m5_mean]3.educ_gp // college
+	
+	// when prior HH income added
+	test [m1_mean]2.educ_gp=[m6_mean]2.educ_gp // some college
+	test [m1_mean]3.educ_gp=[m6_mean]3.educ_gp // college
+
+//pathway
+	// when race / education controls added
+	test [m1p_mean]1.pathway=[m4_mean]1.pathway // mom up not employed
+	test [m1p_mean]2.pathway=[m4_mean]2.pathway // mom up employed
+	test [m1p_mean]4.pathway=[m4_mean]4.pathway // partner down
+	test [m1p_mean]5.pathway=[m4_mean]5.pathway // partner left
+	test [m1p_mean]6.pathway=[m4_mean]6.pathway // other HH change
+	
+	// when first set of controls added
+	test [m1p_mean]1.pathway=[m5_mean]1.pathway // mom up not employed
+	test [m1p_mean]2.pathway=[m5_mean]2.pathway // mom up employed
+	test [m1p_mean]4.pathway=[m5_mean]4.pathway // partner down
+	test [m1p_mean]5.pathway=[m5_mean]5.pathway // partner left
+	test [m1p_mean]6.pathway=[m5_mean]6.pathway // other HH change
+	
+	// when prior HH income added
+	test [m1p_mean]1.pathway=[m6_mean]1.pathway // mom up not employed
+	test [m1p_mean]2.pathway=[m6_mean]2.pathway // mom up employed
+	test [m1p_mean]4.pathway=[m6_mean]4.pathway // partner down
+	test [m1p_mean]5.pathway=[m6_mean]5.pathway // partner left
+	test [m1p_mean]6.pathway=[m6_mean]6.pathway // other HH change
+	
+//race
+	// when education added
+	test [m1r_mean]2.race=[m3_mean]2.race // black
+	test [m1r_mean]4.race=[m3_mean]4.race // hispanic
+	test [m1r_mean]3.race=[m3_mean]3.race // asian
+	test [m1r_mean]5.race=[m3_mean]5.race // other
+	
+	// when pathway added
+	test [m1r_mean]2.race=[m4_mean]2.race // black
+	test [m1r_mean]4.race=[m4_mean]4.race // hispanic
+	test [m1r_mean]3.race=[m4_mean]3.race // asian
+	test [m1r_mean]5.race=[m4_mean]5.race // other
+	
+	// when first set of controls added
+	test [m1r_mean]2.race=[m5_mean]2.race // black
+	test [m1r_mean]4.race=[m5_mean]4.race // hispanic
+	test [m1r_mean]3.race=[m5_mean]3.race // asian
+	test [m1r_mean]5.race=[m5_mean]5.race // other
+	
+	// when prior HH income added
+	test [m1r_mean]2.race=[m6_mean]2.race // black
+	test [m1r_mean]4.race=[m6_mean]4.race // hispanic
+	test [m1r_mean]3.race=[m6_mean]3.race // asian
+	test [m1r_mean]5.race=[m6_mean]5.race // other
+
+	
+********************************************************************************
+**OLD MODELS
+********************************************************************************
 ** Control for prior income
 regress hh_income_raw i.educ_gp thearn_lag if trans_bw60_alt2==1
 regress hh_income_raw i.race_gp thearn_lag if trans_bw60_alt2==1
@@ -628,7 +817,6 @@ regress hh_income_raw i.pathway i.race i.educ_gp thearn_lag if trans_bw60_alt2==
 
 ** Did variance change
 sdtest thearn_lag==thearn_alt if trans_bw60_alt2==1 // pre / post income
-
 
 // old models
 regress hh_income_topcode i.educ_gp
