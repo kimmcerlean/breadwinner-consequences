@@ -318,14 +318,34 @@ sum st_minorchildren if rel_status_detail==2 & trans_bw60_alt2==1 & bw60lag==0
 sum st_minorchildren if rel_status_detail==3 & trans_bw60_alt2==1 & bw60lag==0
 sum st_minorchildren if trans_bw60_alt2==0 & bw60lag==0
 
+// want t0 info
+browse SSUID PNUM year marital_status_t marital_status_t1 extended_hh trans_bw60_alt2 if bw60lag==0
+
+sort SSUID PNUM year
+gen marital_status_t0 = .
+replace marital_status_t0 = marital_status_t1[_n-1] if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & year==year[_n-1]+1
+
+gen extended_hh_t0 = .
+replace extended_hh_t0 = extended_hh[_n-1] if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & year==year[_n-1]+1
+
+tab marital_status_t1 if trans_bw60_alt2==1 & bw60lag==0, m
+tab marital_status_t0 if trans_bw60_alt2==1 & bw60lag==0, m
+
+tab extended_hh if trans_bw60_alt2==1 & bw60lag==0, m
+tab extended_hh_t0 if trans_bw60_alt2==1 & bw60lag==0, m
+
+browse SSUID PNUM year marital_status_t1 marital_status_t0 extended_hh extended_hh_t0 trans_bw60_alt2 if bw60lag==0
+
 tab educ_gp, gen(educ_gp)
 tab race_gp, gen(race_gp)
 tab race, gen(race)
 tab marital_status_t1, gen(marst)
+tab marital_status_t0, gen(marst_0)
 tab pathway, gen(pathway)
 
 unique SSUID PNUM if trans_bw60_alt2==1 & bw60lag==0
 unique SSUID PNUM if bw60lag==0
+
 
 ********************************************************************************
 **# Descriptive statistics
@@ -964,19 +984,23 @@ putexcel A10 = "Black", txtindent(4)
 putexcel A11 = "Hispanic", txtindent(4)
 putexcel A12 = "Non-Hispanic Asian", txtindent(4)
 // putexcel A16 = "Relationship Status (time-varying)"
-putexcel A13 = "Married", txtindent(4)
-putexcel A14 = "Cohabitating", txtindent(4)
-putexcel A15 = "Single", txtindent(4)
-putexcel A16 = "Household size"
-putexcel A17 = "Number of children"
-putexcel A18 = "% Extended households"
+putexcel A13 = "Married t0", txtindent(4)
+putexcel A14 = "Cohabitating t0", txtindent(4)
+putexcel A15 = "Single t0", txtindent(4)
+putexcel A16 = "Married", txtindent(4)
+putexcel A17 = "Cohabitating", txtindent(4)
+putexcel A18 = "Single", txtindent(4)
+putexcel A19 = "Household size"
+putexcel A20 = "Number of children"
+putexcel A21 = "% Extended households t0"
+putexcel A22 = "% Extended households"
 
-putexcel A20 = "Mothers' earnings at t0 (employed mothers only)"
-putexcel A21 = "HH earnings at t0"
+putexcel A24 = "Mothers' earnings at t0 (employed mothers only)"
+putexcel A25 = "HH earnings at t0"
 
 local colu "B C D E F G"
 
-local descriptives "employed_t0 educ_gp1 educ_gp2 educ_gp3 race1 race2 race4 race3 marst1 marst2 marst3 avg_hhsize st_minorchildren extended_hh"
+local descriptives "employed_t0 educ_gp1 educ_gp2 educ_gp3 race1 race2 race4 race3 marst_01 marst_02 marst_03 marst1 marst2 marst3 avg_hhsize st_minorchildren extended_hh_t0 extended_hh"
 
 // Distributions
 forvalues p=1/6{
@@ -991,6 +1015,9 @@ forvalues p=1/6{
 	}
 }
 
+tab marital_status_t1 if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+tab marital_status_t0 if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+
 // Income 
 local colu "B C D E F G"
 
@@ -998,11 +1025,11 @@ forvalues p=1/6{
 	local col: word `p' of `colu'
 	*Mother
 	capture sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail  // earnings lag has to be 0 for pathway 1
-	capture putexcel `col'20=`r(mean)', nformat(###,###)
+	capture putexcel `col'24=`r(mean)', nformat(###,###)
 
 	* HH
 	sum thearn_lag if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail
-	putexcel `col'21=`r(mean)', nformat(###,###)
+	putexcel `col'25=`r(mean)', nformat(###,###)
 }
 
 ********************************************************************************
