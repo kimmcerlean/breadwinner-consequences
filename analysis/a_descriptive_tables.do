@@ -295,6 +295,15 @@ gen log_income_change = log_income
 replace log_income_change = log_income*-1 if hh_income_raw_all<0
 browse hh_income_raw_all hh_income_pos log_income log_income_change
 
+// adding info on HH composition (created file 10 in 2014 folder) 
+merge 1:1 SSUID PNUM year using "$tempdir/household_lookup.dta"
+drop if _merge==2
+drop _merge
+
+// mother employed at t0
+gen employed_t0=0
+replace employed_t0=1 if start_from_0==0
+
 // keep if trans_bw60_alt2==1 & bw60lag==0 - want to get comparison to mothers who are NOT the primary earner
 
 sum avg_hhsize if trans_bw60_alt2==1 & bw60lag==0
@@ -350,7 +359,6 @@ putexcel A20 = "Mom Up Partner Down", txtindent(4)
 putexcel A21 = "Partner Down", txtindent(4)
 putexcel A22 = "Partner Exit", txtindent(4)
 putexcel A23 = "Other HH Change", txtindent(4)
-
 
 // Income 
 * HH
@@ -567,9 +575,6 @@ lincom _b[c.pathway7@0bn.trans_bw60_alt2] - _b[c.pathway7@1.trans_bw60_alt2]
 *mother's employment variable as well (prob should integrate above eventually)
 tab start_from_0 if trans_bw60_alt2==1 & bw60lag==0
 
-gen employed_t0=0
-replace employed_t0=1 if start_from_0==0
-
 tab trans_bw60_alt2 employed_t0 if bw60lag==0 [aweight=scaled_weight], row
 tab employed_t0 if bw60lag==0 [aweight=scaled_weight]
 
@@ -580,11 +585,6 @@ svy: mean employed_t0 if bw60lag==0, over(trans_bw60_alt2) coeflegend
 lincom _b[c.employed_t0@0bn.trans_bw60_alt2] - _b[c.employed_t0@1.trans_bw60_alt2]
 
 ttest earnings_lag if bw60lag==0 & earnings_lag!=0, by(trans_bw60_alt2)  
-
-// adding info on HH composition (created file 10 in 2014 folder) 
-merge 1:1 SSUID PNUM year using "$tempdir/household_lookup.dta"
-drop if _merge==2
-drop _merge
 
 sum avg_hhsize if bw60lag==0 [aweight=scaled_weight]
 sum avg_hhsize if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
@@ -942,6 +942,68 @@ forvalues r=1/4{
 	}
 }
 
+********************************************************************************
+**# Descriptive statistics by pathway (for appendix)
+********************************************************************************
+putexcel set "$results/Breadwinner_Heterogeneity", sheet(Table3) modify
+putexcel B1 = "Mom Up, Unemployed"
+putexcel C1 = "Mom Up, Employed"
+putexcel D1 = "Mom Up Partner Down"
+putexcel E1 = "Partner Down"
+putexcel F1 = "Partner Exit"
+putexcel G1 = "Other HH Change"
+
+putexcel A5 = "Mothers employed at t0"
+// putexcel A7 = "Education (time-varying)"
+putexcel A6 = "HS Degree or Less", txtindent(4)
+putexcel A7 = "Some College", txtindent(4)
+putexcel A8 = "College Plus", txtindent(4)
+// putexcel A11 = "Race/ethnicity (time-invariant)"
+putexcel A9 = "Non-Hispanic White", txtindent(4)
+putexcel A10 = "Black", txtindent(4)
+putexcel A11 = "Hispanic", txtindent(4)
+putexcel A12 = "Non-Hispanic Asian", txtindent(4)
+// putexcel A16 = "Relationship Status (time-varying)"
+putexcel A13 = "Married", txtindent(4)
+putexcel A14 = "Cohabitating", txtindent(4)
+putexcel A15 = "Single", txtindent(4)
+putexcel A16 = "Household size"
+putexcel A17 = "Number of children"
+putexcel A18 = "% Extended households"
+
+putexcel A20 = "Mothers' earnings at t0 (employed mothers only)"
+putexcel A21 = "HH earnings at t0"
+
+local colu "B C D E F G"
+
+local descriptives "employed_t0 educ_gp1 educ_gp2 educ_gp3 race1 race2 race4 race3 marst1 marst2 marst3 avg_hhsize st_minorchildren extended_hh"
+
+// Distributions
+forvalues p=1/6{
+	local col: word `p' of `colu'
+	local i=1
+	foreach var in `descriptives'{
+		local row = `i' + 4
+		mean `var' if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p' [aweight=scaled_weight]
+		matrix `var' = e(b)
+		putexcel `col'`row' = matrix(`var'), nformat(#.##%)
+		local ++i
+	}
+}
+
+// Income 
+local colu "B C D E F G"
+
+forvalues p=1/6{
+	local col: word `p' of `colu'
+	*Mother
+	capture sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail  // earnings lag has to be 0 for pathway 1
+	capture putexcel `col'20=`r(mean)', nformat(###,###)
+
+	* HH
+	sum thearn_lag if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail
+	putexcel `col'21=`r(mean)', nformat(###,###)
+}
 
 ********************************************************************************
 **# Figures for JFEI
