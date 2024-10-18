@@ -213,6 +213,10 @@ replace rel_status_detail=2 if partnered_all==1 & rel_status_detail==.
 label define rel_detail 1 "Single" 2 "Partnered" 3 "Dissolved"
 label values rel_status_detail rel_detail
 
+// add BW at birth to get descriptives.
+tab bw60_mom if firstbirth==1 & mom_panel==1
+gen bw_at_birth = 0
+replace bw_at_birth = 1 if bw60_mom==1 & firstbirth==1 & mom_panel==1
 
 * Get percentiles
 //browse SSUID year bw60 bw60lag
@@ -335,6 +339,14 @@ tab extended_hh if trans_bw60_alt2==1 & bw60lag==0, m
 tab extended_hh_t0 if trans_bw60_alt2==1 & bw60lag==0, m
 
 browse SSUID PNUM year marital_status_t1 marital_status_t0 extended_hh extended_hh_t0 trans_bw60_alt2 if bw60lag==0
+browse SSUID PNUM year partnered_t1 earnings earnings_lag earnings_sp earnings_a_sp trans_bw60_alt2 trans_bw60_alt2 if bw60lag==0
+gen partner_earnings=.
+replace partner_earnings = 0 if earnings_a_sp==0
+replace partner_earnings = 1 if earnings_a_sp!=0 & earnings_a_sp!=.
+tab partnered_t1 partner_earnings, m
+
+gen partner_earnings_t0 = .
+replace partner_earnings_t0 = partner_earnings[_n-1] if SSUID==SSUID[_n-1] & PNUM==PNUM[_n-1] & year==year[_n-1]+1
 
 tab educ_gp, gen(educ_gp)
 tab race_gp, gen(race_gp)
@@ -972,6 +984,7 @@ putexcel D1 = "Mom Up Partner Down"
 putexcel E1 = "Partner Down"
 putexcel F1 = "Partner Exit"
 putexcel G1 = "Other HH Change"
+putexcel H1 = "BW at birth"
 
 putexcel A5 = "Mothers employed at t0"
 // putexcel A7 = "Education (time-varying)"
@@ -994,9 +1007,11 @@ putexcel A19 = "Household size"
 putexcel A20 = "Number of children"
 putexcel A21 = "% Extended households t0"
 putexcel A22 = "% Extended households"
+putexcel A23 = "Partner had earnings t0"
+putexcel A24 = "Partner had earnings t"
 
-putexcel A24 = "Mothers' earnings at t0 (employed mothers only)"
-putexcel A25 = "HH earnings at t0"
+putexcel A26 = "Mothers' earnings at t0 (employed mothers only)"
+putexcel A27 = "HH earnings at t0"
 
 local colu "B C D E F G"
 
@@ -1015,8 +1030,36 @@ forvalues p=1/6{
 	}
 }
 
+forvalues p=1/6{
+	local col: word `p' of `colu'
+	mean partner_earnings_t0 if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p' & inlist(marital_status_t0,1,2) [aweight=scaled_weight]
+	matrix pe_0 = e(b)
+	putexcel `col'23 = matrix(pe_0), nformat(#.##%)
+	
+	mean partner_earnings if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p' & inlist(marital_status_t1,1,2) [aweight=scaled_weight]
+	matrix pe = e(b)
+	putexcel `col'24 = matrix(pe), nformat(#.##%)
+}
+
+// bw at birth - diff var / sample
+local i=1
+foreach var in `descriptives'{
+	local row = `i' + 4
+	mean `var' if bw_at_birth==1 [aweight=scaled_weight]
+	matrix `var' = e(b)
+	putexcel H`row' = matrix(`var'), nformat(#.##%)
+	local ++i
+}
+
 tab marital_status_t1 if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
 tab marital_status_t0 if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
+
+tab partner_earnings_t0 if trans_bw60_alt2==1 & bw60lag==0 & inlist(marital_status_t0,1,2) [aweight=scaled_weight]
+tab partner_earnings if trans_bw60_alt2==1 & bw60lag==0 & inlist(marital_status_t1,1,2) [aweight=scaled_weight]
+
+tab partner_earnings_t0 if bw_at_birth==1 & inlist(marital_status_t0,1,2) [aweight=scaled_weight]
+tab partner_earnings if bw_at_birth==1 & inlist(marital_status_t1,1,2) [aweight=scaled_weight]
+
 
 // Income 
 local colu "B C D E F G"
@@ -1025,12 +1068,18 @@ forvalues p=1/6{
 	local col: word `p' of `colu'
 	*Mother
 	capture sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail  // earnings lag has to be 0 for pathway 1
-	capture putexcel `col'24=`r(mean)', nformat(###,###)
+	capture putexcel `col'26=`r(mean)', nformat(###,###)
 
 	* HH
 	sum thearn_lag if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail
-	putexcel `col'25=`r(mean)', nformat(###,###)
+	putexcel `col'27=`r(mean)', nformat(###,###)
 }
+
+sum earnings_lag if earnings_lag!=0 & bw_at_birth==1, detail  // earnings lag has to be 0 for pathway 1
+putexcel H26=`r(mean)', nformat(###,###)
+	
+sum thearn_lag if bw_at_birth==1, detail
+putexcel H27=`r(mean)', nformat(###,###)
 
 ********************************************************************************
 **# Figures for JFEI
