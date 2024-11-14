@@ -218,6 +218,22 @@ tab bw60_mom if firstbirth==1 & mom_panel==1
 gen bw_at_birth = 0
 replace bw_at_birth = 1 if bw60_mom==1 & firstbirth==1 & mom_panel==1
 
+// add continuous BW to get descriptives
+by SSUID PNUM: egen years_in_sipp = count(year)
+
+by SSUID PNUM: egen years_eligible = count(year) if bw60!=.
+bysort SSUID PNUM (years_eligible): replace years_eligible=years_eligible[1]
+
+by SSUID PNUM: egen years_bw = count(year) if bw60==1
+bysort SSUID PNUM (years_bw): replace years_bw=years_bw[1]
+replace years_bw=0 if years_bw==.
+
+gen always_bw = 0
+replace always_bw = 1 if years_bw==years_eligible
+
+sort SSUID PNUM year
+browse SSUID PNUM year always_bw years_in_sipp years_eligible years_bw
+
 * Get percentiles
 //browse SSUID year bw60 bw60lag
 
@@ -985,6 +1001,7 @@ putexcel E1 = "Partner Down"
 putexcel F1 = "Partner Exit"
 putexcel G1 = "Other HH Change"
 putexcel H1 = "BW at birth"
+putexcel I1 = "Always BW"
 
 putexcel A5 = "Mothers employed at t0"
 // putexcel A7 = "Education (time-varying)"
@@ -1051,6 +1068,16 @@ foreach var in `descriptives'{
 	local ++i
 }
 
+// always BW - diff var / sample
+local i=1
+foreach var in `descriptives'{
+	local row = `i' + 4
+	mean `var' if always_bw==1 [aweight=scaled_weight]
+	matrix `var' = e(b)
+	putexcel I`row' = matrix(`var'), nformat(#.##%)
+	local ++i
+}
+
 tab marital_status_t1 if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
 tab marital_status_t0 if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight]
 
@@ -1059,6 +1086,9 @@ tab partner_earnings if trans_bw60_alt2==1 & bw60lag==0 & inlist(marital_status_
 
 tab partner_earnings_t0 if bw_at_birth==1 & inlist(marital_status_t0,1,2) [aweight=scaled_weight]
 tab partner_earnings if bw_at_birth==1 & inlist(marital_status_t1,1,2) [aweight=scaled_weight]
+
+tab partner_earnings_t0 if always_bw==1 & inlist(marital_status_t0,1,2) [aweight=scaled_weight]
+tab partner_earnings if always_bw==1 & inlist(marital_status_t1,1,2) [aweight=scaled_weight]
 
 
 // Income 
@@ -1080,6 +1110,12 @@ putexcel H26=`r(mean)', nformat(###,###)
 	
 sum thearn_lag if bw_at_birth==1, detail
 putexcel H27=`r(mean)', nformat(###,###)
+
+sum earnings_lag if earnings_lag!=0 & always_bw==1, detail  // earnings lag has to be 0 for pathway 1
+putexcel I26=`r(mean)', nformat(###,###)
+	
+sum thearn_lag if always_bw==1, detail
+putexcel I27=`r(mean)', nformat(###,###)
 
 ********************************************************************************
 **# Figures for JFEI
