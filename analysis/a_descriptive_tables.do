@@ -407,6 +407,8 @@ putexcel A20 = "Mom Up Partner Down", txtindent(4)
 putexcel A21 = "Partner Down", txtindent(4)
 putexcel A22 = "Partner Exit", txtindent(4)
 putexcel A23 = "Other HH Change", txtindent(4)
+putexcel A24 = "TANF in Year Prior", txtindent(4)
+putexcel A25 = "EITC in Year Prior", txtindent(4)
 
 // Income 
 * HH
@@ -488,6 +490,22 @@ local i=1
 
 foreach var in pathway2 pathway3 pathway4 pathway5 pathway6 pathway7{
 	local row = `i'+17
+	mean `var' if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight] // remove svy to see if matches paper 1
+	matrix `var'_bw14 = e(b)
+	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
+	mean `var' if trans_bw60_alt2==0 & bw60lag==0 [aweight=scaled_weight]
+	matrix `var'_nobw = e(b)
+	putexcel C`row' = matrix(`var'_nobw), nformat(#.##%)
+	mean `var' if bw60lag==0 [aweight=scaled_weight]
+	matrix `var'_all = e(b)
+	putexcel D`row' = matrix(`var'_all), nformat(#.##%)
+	local ++i
+}
+
+* Welfare receipt
+local i=1
+foreach var in tanf_lag eeitc{
+	local row = `i'+23
 	mean `var' if trans_bw60_alt2==1 & bw60lag==0 [aweight=scaled_weight] // remove svy to see if matches paper 1
 	matrix `var'_bw14 = e(b)
 	putexcel B`row' = matrix(`var'_bw14), nformat(#.##%)
@@ -1024,15 +1042,19 @@ putexcel A19 = "Household size"
 putexcel A20 = "Number of children"
 putexcel A21 = "% Extended households t0"
 putexcel A22 = "% Extended households"
-putexcel A23 = "Partner had earnings t0"
-putexcel A24 = "Partner had earnings t"
+putexcel A23 = "TANF in Year Prior (t0)", txtindent(4)
+putexcel A24 = "EITC in Year Prior (t0)", txtindent(4)
 
-putexcel A26 = "Mothers' earnings at t0 (employed mothers only)"
-putexcel A27 = "HH earnings at t0"
+
+putexcel A25 = "Partner had earnings t0"
+putexcel A26 = "Partner had earnings t"
+putexcel A27 = "Mothers' earnings at t0 (employed mothers only)"
+putexcel A28 = "HH earnings at t0"
+
 
 local colu "B C D E F G"
 
-local descriptives "employed_t0 educ_gp1 educ_gp2 educ_gp3 race1 race2 race4 race3 marst_01 marst_02 marst_03 marst1 marst2 marst3 avg_hhsize st_minorchildren extended_hh_t0 extended_hh"
+local descriptives "employed_t0 educ_gp1 educ_gp2 educ_gp3 race1 race2 race4 race3 marst_01 marst_02 marst_03 marst1 marst2 marst3 avg_hhsize st_minorchildren extended_hh_t0 extended_hh tanf_lag eeitc"
 
 // Distributions
 forvalues p=1/6{
@@ -1051,11 +1073,11 @@ forvalues p=1/6{
 	local col: word `p' of `colu'
 	mean partner_earnings_t0 if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p' & inlist(marital_status_t0,1,2) [aweight=scaled_weight]
 	matrix pe_0 = e(b)
-	putexcel `col'23 = matrix(pe_0), nformat(#.##%)
+	putexcel `col'25 = matrix(pe_0), nformat(#.##%)
 	
 	mean partner_earnings if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p' & inlist(marital_status_t1,1,2) [aweight=scaled_weight]
 	matrix pe = e(b)
-	putexcel `col'24 = matrix(pe), nformat(#.##%)
+	putexcel `col'26 = matrix(pe), nformat(#.##%)
 }
 
 // bw at birth - diff var / sample
@@ -1098,24 +1120,24 @@ forvalues p=1/6{
 	local col: word `p' of `colu'
 	*Mother
 	capture sum earnings_lag if earnings_lag!=0 & trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail  // earnings lag has to be 0 for pathway 1
-	capture putexcel `col'26=`r(mean)', nformat(###,###)
+	capture putexcel `col'27=`r(mean)', nformat(###,###)
 
 	* HH
 	sum thearn_lag if trans_bw60_alt2==1 & bw60lag==0 & pathway==`p', detail
-	putexcel `col'27=`r(mean)', nformat(###,###)
+	putexcel `col'28=`r(mean)', nformat(###,###)
 }
 
 sum earnings_lag if earnings_lag!=0 & bw_at_birth==1, detail  // earnings lag has to be 0 for pathway 1
-putexcel H26=`r(mean)', nformat(###,###)
+putexcel H27=`r(mean)', nformat(###,###)
 	
 sum thearn_lag if bw_at_birth==1, detail
-putexcel H27=`r(mean)', nformat(###,###)
+putexcel H28=`r(mean)', nformat(###,###)
 
 sum earnings_lag if earnings_lag!=0 & always_bw==1, detail  // earnings lag has to be 0 for pathway 1
-putexcel I26=`r(mean)', nformat(###,###)
+putexcel I27=`r(mean)', nformat(###,###)
 	
 sum thearn_lag if always_bw==1, detail
-putexcel I27=`r(mean)', nformat(###,###)
+putexcel I28=`r(mean)', nformat(###,###)
 
 ********************************************************************************
 **# Figures for JFEI
